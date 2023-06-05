@@ -1,2 +1,4 @@
 .idea/
 amibot.conf
+.gitlab-ci.yaml
+README.md
