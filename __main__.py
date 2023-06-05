@@ -37,5 +37,6 @@ Flow:
 1-start application
 2.- Read communities from configuration. 
 3.- Connect to each community.
+4.- process message.
 
 """
