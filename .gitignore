@@ -1,4 +1,5 @@
 .idea/
+helm/
 amibot.conf
 .gitlab-ci.yaml
 README.md
