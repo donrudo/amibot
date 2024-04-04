@@ -8,3 +8,16 @@ amibot.conf
 *.py[cod]
 *$py.class
 *.pyc
+<<<<<<< HEAD
+=======
+.kdev4
+*.creator*
+*.kdev4
+*.files
+*.includes
+*.cxxflags
+*.cflags
+*.config
+.qtc_clangd
+venv/
+>>>>>>> do-app
