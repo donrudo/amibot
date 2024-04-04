@@ -19,3 +19,4 @@ README.md
 *.cflags
 *.config
 .qtc_clangd
+venv/
