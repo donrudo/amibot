@@ -5,6 +5,7 @@ class Community:
     def __init__(self, platform, secret):
         self._platform = platform
         self._secret = secret
+        self._bot = None
 
     def __str__(self):
         '''Prints only platform instead of leaking other information'''
@@ -18,6 +19,10 @@ class Community:
     def platform(self):
         return self._platform
 
+    @property
+    def bot(self):
+        return self._bot
+
     @secret.setter
     def secret(self, value):
         self._secret = value
@@ -25,3 +30,7 @@ class Community:
     @platform.setter
     def platform(self, value):
         self._platform = value
+
+    @bot.setter
+    def bot(self, value):
+        self._bot = value

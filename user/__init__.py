@@ -1,6 +1,6 @@
 class User:
-    """Bot properties to be used, add openAI behaviors
-    and user interactions here"""
+  """Bot properties to be used, add openAI behaviors
+  and user interactions here"""
 
   def __init__(self, name, platform, secret):
     self._name = name
@@ -20,7 +20,3 @@ class User:
   @name.setter
   def name(self, value):
     self._name = value
-
-  @platform.setter
-  def platform(self, value):
-    self._platform = value
