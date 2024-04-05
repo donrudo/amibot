@@ -20,7 +20,8 @@ class Discord(Community):
         async def on_message(message):
             if message.author != self.client.user:
                 print(message.content.capitalize())
-                reply = self.bot.chat_completion(message.content.capitalize())
+                print(message.author.name)
+                reply = self.bot.chat_completion(message.author.name, message.content.capitalize())
                 await message.channel.send(reply)
 
     @property
