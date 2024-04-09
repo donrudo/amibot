@@ -3,10 +3,12 @@ from collections import deque
 from user import User
 from openai import OpenAI
 
+
 class DictNoNone(dict):
     def __setitem__(self, key, value):
         if key in self or value is not None:
             dict.__setitem__(self, key, value)
+
 
 class Bot(User):
     pass
@@ -18,11 +20,9 @@ class Bot(User):
         self._client = openai.Client
         self._messages = DictNoNone()
         self._messages['default'] = [
-             {"role": "system",
-              "content": "expert in short texting, skilled developer who likes videogames and has bad mood"}
+            {"role": "system",
+             "content": "expert in short texting, skilled developer who likes videogames and has bad mood"}
         ]
-
-
 
     @property
     def model(self):
@@ -77,7 +77,7 @@ class Bot(User):
             stream=False,
             model=self.model,
             max_tokens=512,
-            messages= self._messages[name]
+            messages=self._messages[name]
         )
         self._messages[name].append({"role": "assistant", "content": response.choices[0].message.content})
         return response.choices[0].message.content
