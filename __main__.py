@@ -10,6 +10,7 @@ with open("amibot.conf", "r") as stream:
         if "amibot" not in configuration:
             ValueError("undefined amibot settings")
             exit(1)
+
         '''checks for Discord settings'''
         if "discord" in configuration:
             if "enabled" in configuration['discord'] and configuration['discord']['enabled']:
@@ -17,7 +18,7 @@ with open("amibot.conf", "r") as stream:
                 community = Discord(configuration['discord']['token'])
 
         '''checks for openai settings'''
-        if "openai" in configuration:
+        if amigo is not None and "openai" in configuration:
             if "enabled" in configuration['openai'] and configuration['openai']["enabled"]:
                 amigo.model = configuration['openai']['model']
                 amigo.engine = 'openai'
