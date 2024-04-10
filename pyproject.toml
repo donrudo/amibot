@@ -1,0 +1,19 @@
+[project]
+name = "amibot"
+version = "0.0.1"
+requires-python = ">= 3.10"
+description = "A bot to talk with from chat platforms."
+authors = [
+    {name="Carlos A. Morales", email="pro@donrudo.com"}
+]
+
+[project.urls]
+Repository = "https://www.gitlab.com/donrudo/amibot"
+
+
+[project.scripts]
+
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
