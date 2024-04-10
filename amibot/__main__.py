@@ -1,10 +1,17 @@
+#!/usr/bin/env python3
+
 from user.bot import Bot
 from community.discord import *
-
+import argparse
 import yaml
 
+parser = argparse.ArgumentParser(prog='Amibot', add_help=True)
+parser.add_argument('-c', '--config', type=str, help='path to configuration file')
+args = parser.parse_args()
+
 amigo = None
-with open("amibot.conf", "r") as stream:
+
+with open(args.config, "r") as stream:
     try:
         configuration = yaml.safe_load(stream)
         if "amibot" not in configuration:
