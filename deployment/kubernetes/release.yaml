@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amibot
+  labels:
+    app: amibot
+    version: v0.0.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: amibot
+  template:
+    metadata:
+      name: amibot
+      labels:
+        app: amibot
+    spec:
+      containers:
+        - name: amibot
+          image: amibot:0.0.1
+          imagePullPolicy: Never
+          volumeMounts:
+            - mountPath: /nonexistent/configs
+              name: config-volume
+      restartPolicy: Always
+      volumes:
+        - name: config-volume
+          configMap:
+            name: amibot-config
