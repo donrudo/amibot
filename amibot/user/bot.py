@@ -21,7 +21,7 @@ class Bot(User):
         self._messages = DictNoNone()
         self._messages['default'] = [
             {"role": "system",
-             "content": "expert in short texting, skilled developer who likes videogames and has bad mood"}
+             "content": "expert in short texting, skilled developer who likes videogames and has bad mood and the code is at https://gitlab.com/donrudo/amibot "}
         ]
 
     @property
@@ -35,6 +35,10 @@ class Bot(User):
     @property
     def client(self):
         return self._client
+
+    @property
+    def check(self):
+        return self._check
 
     @property
     def messages(self):
@@ -51,7 +55,15 @@ class Bot(User):
     @client.setter
     def client(self, token):
         self._client = OpenAI(api_key=token)
+        if self._client.is_closed():
+            self.check = False
+        else:
+            self.check = True
         print("Connected to OpenAI API")
+
+    @check.setter
+    def check(self, value):
+        self._check = value
 
     @messages.setter
     def messages(self, key, value):

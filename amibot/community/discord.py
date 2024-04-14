@@ -10,6 +10,7 @@ class Discord(Community):
         super().__init__("Discord", secret)
         self.client = discord.Client(intents=discord.Intents.all())
         self._bot = None
+        self.check = self.client.is_ready()
 
         @self.client.event
         async def on_ready():
@@ -24,6 +25,5 @@ class Discord(Community):
                 reply = self.bot.chat_completion(message.author.name, message.content.capitalize())
                 await message.channel.send(reply)
 
-    @property
     def start(self):
         self.client.run(self.secret)

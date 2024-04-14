@@ -1,16 +1,51 @@
 #!/usr/bin/env python3
-
+from fastapi import FastAPI, Request
 from user.bot import Bot
 from community.discord import *
+import asyncio
 import argparse
 import yaml
+import uvicorn
+
 
 parser = argparse.ArgumentParser(prog='Amibot', add_help=True)
 parser.add_argument('-c', '--config', type=str, help='path to configuration file')
 args = parser.parse_args()
 
 amigo = None
+Checks = FastAPI()
 
+
+@Checks.get("/")
+async def root():
+    """Returns "OK" if the community and the bot were loaded fine"""
+    if community.check() and amigo.check():
+        return {"message": "OK"}
+
+    return{"message": "False"}
+
+
+def api_start():
+    uvicorn.run(Checks, host="0.0.0.0", port=23459)
+
+
+async def start():
+
+    """Starts the bot and the community"""
+    async with asyncio.TaskGroup() as tasks:
+        task_community = tasks.create_task(asyncio.to_thread(community.start))
+        task_apiserver = tasks.create_task(asyncio.to_thread(api_start))
+
+    while True:
+        await asyncio.sleep(1)
+        if not task_community.done():
+            continue
+
+        if not task_apiserver.done():
+            continue
+        break
+
+"""Reads the configuration file and sets up the bot and community"""
 with open(args.config, "r") as stream:
     try:
         configuration = yaml.safe_load(stream)
@@ -45,8 +80,9 @@ print("Username: ", amigo.name)
 print("Plataforma: ", amigo.platform)
 print("OpenAI: ", amigo.client)
 
-community.start()
+app = FastAPI()
 
+asyncio.run(start())
 
 """
 Flow:
