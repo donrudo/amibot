@@ -21,7 +21,7 @@ class Community:
         return self._platform
 
     @property
-    def check(self) -> bool:
+    def is_ready(self) -> bool:
         return self._check
 
     @property
@@ -36,8 +36,8 @@ class Community:
     def platform(self, value):
         self._platform = value
 
-    @check.setter
-    def check(self, value):
+    @is_ready.setter
+    def is_ready(self, value):
         self._check = value
 
     @bot.setter
