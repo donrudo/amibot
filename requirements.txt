@@ -2,3 +2,5 @@ pyyaml
 discord
 openai
 argparse
+fastapi
+uvicorn

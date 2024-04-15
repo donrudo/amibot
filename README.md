@@ -24,6 +24,6 @@ Currently only works on Discord.
 ## TODO:
 - [ ] Python: Make it cheaper: currently uses a Gateway pattern, which is expensive.
 - [ ] Python: Add process to copy the config file to a temporary location, then delete it after the bot is running.
-- [ ] Python: Add a healthcheck.
+- [X] Python: Add a healthcheck.
 - [ ] K8s: Move config file to secrets.
 - [ ] K8s: Use kubeseal to encrypt the config file.

@@ -4,6 +4,7 @@ amibot.conf
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
+*egg-info
 *__pycache__*
 *.py[cod]
 *$py.class
@@ -18,3 +19,4 @@ amibot.conf
 *.config
 .qtc_clangd
 venv/
+dist/

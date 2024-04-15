@@ -23,6 +23,20 @@ spec:
           volumeMounts:
             - mountPath: /nonexistent/configs
               name: config-volume
+          ports:
+          - containerPort: 23459
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 23459
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 23459
+            initialDelaySeconds: 5
+            periodSeconds: 5
       restartPolicy: Always
       volumes:
         - name: config-volume
