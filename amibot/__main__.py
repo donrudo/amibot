@@ -1,49 +1,63 @@
 #!/usr/bin/env python3
+from contextlib import asynccontextmanager
+from multiprocessing import Pool
 from fastapi import FastAPI, Request
 from user.bot import Bot
 from community.discord import *
-import asyncio
 import argparse
 import yaml
 import uvicorn
 
 
+amigo = None
 parser = argparse.ArgumentParser(prog='Amibot', add_help=True)
 parser.add_argument('-c', '--config', type=str, help='path to configuration file')
 args = parser.parse_args()
 
-amigo = None
-Checks = FastAPI()
+
+@asynccontextmanager
+async def contextmanager(api_checks: FastAPI):
+    """yelds to only run on shutdown."""
+
+    print("FastAPI -Context Manager: Started ")
+
+    yield
+
+    print("FastAPI - Context Manager: Stopping the bot and the community")
+
+    # Clean up and release the resources
+    await shutdown_event()
+
+api_checks = FastAPI(lifespan=contextmanager)
 
 
-@Checks.get("/")
-async def root():
+"""healthchecks for Readyness and liveness probes"""
+
+
+@api_checks.get("/readyness")
+async def readyness():
     """Returns "OK" if the community and the bot were loaded fine"""
-    if community.check() and amigo.check():
+    if community.is_ready() and amigo.is_ready():
         return {"message": "OK"}
 
     return{"message": "False"}
 
 
-def api_start():
-    uvicorn.run(Checks, host="0.0.0.0", port=23459)
+@api_checks.get("/liveness")
+async def liveness():
+    """Returns "OK" if the community and the bot were loaded fine"""
+    if community.is_ready() and amigo.is_ready():
+        return {"message": "OK"}
+
+    return {"message": "False"}
 
 
-async def start():
+async def shutdown_event():
+    """Gracefully stops the bot and the community"""
+    print("Stopping the bot and the community")
+    await community.stop()
+    amigo.client.close()
 
-    """Starts the bot and the community"""
-    async with asyncio.TaskGroup() as tasks:
-        task_community = tasks.create_task(asyncio.to_thread(community.start))
-        task_apiserver = tasks.create_task(asyncio.to_thread(api_start))
-
-    while True:
-        await asyncio.sleep(1)
-        if not task_community.done():
-            continue
-
-        if not task_apiserver.done():
-            continue
-        break
 
 """Reads the configuration file and sets up the bot and community"""
 with open(args.config, "r") as stream:
@@ -80,15 +94,28 @@ print("Username: ", amigo.name)
 print("Plataforma: ", amigo.platform)
 print("OpenAI: ", amigo.client)
 
-app = FastAPI()
 
-asyncio.run(start())
+def main():
+    """Starts the API server for healthchecks and metrics"""
 
-"""
-Flow:
-1-start application
-2.- Read communities from configuration. 
-3.- Connect to each community.
-4.- process message.
+    loop = asyncio.get_event_loop()
 
-"""
+    api_config = uvicorn.Config(api_checks, host="0.0.0.0", port=23459, loop=loop)
+    api_server = uvicorn.Server(api_config)
+
+    try:
+        loop.create_task(community.start())
+        try:
+            loop.run_until_complete(api_server.serve())
+        except KeyboardInterrupt:
+            print("Application stopped by user")
+    except Exception as e:
+        print("Exception: ", e)
+    else:
+        if loop.is_closed() is not True:
+            loop.close()
+
+
+if __name__ == "__main__":
+    # asyncio.run(start())
+    main()
