@@ -4,7 +4,7 @@ configMapGenerator:
     labels:
       app: amibot
   files:
-  - configs/amibot.conf
+  - configs/amibot_example.conf
 resources:
 - deployment/kubernetes/namespace.yaml
 - deployment/kubernetes/release.yaml
