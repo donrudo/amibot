@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from contextlib import asynccontextmanager
-from multiprocessing import Pool
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException
 from user.bot import Bot
 from community.discord import *
 import argparse
@@ -13,6 +12,9 @@ amigo = None
 parser = argparse.ArgumentParser(prog='Amibot', add_help=True)
 parser.add_argument('-c', '--config', type=str, help='path to configuration file')
 args = parser.parse_args()
+
+
+"""REST API INITIALIZATION --- healthchecks for Readyness and liveness probes"""
 
 
 @asynccontextmanager
@@ -31,35 +33,31 @@ async def contextmanager(api_checks: FastAPI):
 api_checks = FastAPI(lifespan=contextmanager)
 
 
-"""healthchecks for Readyness and liveness probes"""
-
-
 @api_checks.get("/readyness")
 async def readyness():
-    """Returns "OK" if the community and the bot were loaded fine"""
-    if community.is_ready() and amigo.is_ready():
-        return {"message": "OK"}
+    """Returns "OK" when both objects are not None, regardless of the status of the bot and the community"""
+    if community is None and amigo is None:
+        raise HTTPException(status_code=202, detail="Not Ready")
 
-    return{"message": "False"}
+    return{"message": "OK"}
 
 
 @api_checks.get("/liveness")
 async def liveness():
     """Returns "OK" if the community and the bot were loaded fine"""
-    if community.is_ready() and amigo.is_ready():
-        return {"message": "OK"}
+    if community.is_ready() is False and amigo.is_ready() is False:
+        raise HTTPException(status_code=500, detail="Internal Error")
 
-    return {"message": "False"}
+    if community.is_ready() is False:
+        raise HTTPException(status_code=503, detail="Community is Offline")
+
+    if amigo.is_ready() is False:
+        raise HTTPException(status_code=503, detail="Bot is gone")
+
+    return {"message": "OK"}
 
 
-async def shutdown_event():
-    """Gracefully stops the bot and the community"""
-    print("Stopping the bot and the community")
-    await community.stop()
-    amigo.client.close()
-
-
-"""Reads the configuration file and sets up the bot and community"""
+""" Configuration  ---- Reads the configuration file and sets up the bot and community"""
 with open(args.config, "r") as stream:
     try:
         configuration = yaml.safe_load(stream)
@@ -93,6 +91,16 @@ if amigo is None:
 print("Username: ", amigo.name)
 print("Plataforma: ", amigo.platform)
 print("OpenAI: ", amigo.client)
+
+
+""" Main section starts --- """
+
+
+async def shutdown_event():
+    """Gracefully stops the bot and the community"""
+    print("Stopping the bot and the community")
+    await community.stop()
+    amigo.client.close()
 
 
 def main():
