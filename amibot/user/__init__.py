@@ -15,7 +15,7 @@ class User:
         return self._name
 
     @property
-    def check(self):
+    def is_ready(self):
         return self._check
 
     @property
@@ -26,6 +26,6 @@ class User:
     def name(self, value):
         self._name = value
 
-    @check.setter
-    def check(self, value):
+    @is_ready.setter
+    def is_ready(self, value):
         self._check = value
