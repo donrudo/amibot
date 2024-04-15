@@ -14,49 +14,6 @@ parser.add_argument('-c', '--config', type=str, help='path to configuration file
 args = parser.parse_args()
 
 
-"""REST API INITIALIZATION --- healthchecks for Readyness and liveness probes"""
-
-
-@asynccontextmanager
-async def contextmanager(api_checks: FastAPI):
-    """yelds to only run on shutdown."""
-
-    print("FastAPI -Context Manager: Started ")
-
-    yield
-
-    print("FastAPI - Context Manager: Stopping the bot and the community")
-
-    # Clean up and release the resources
-    await shutdown_event()
-
-api_checks = FastAPI(lifespan=contextmanager)
-
-
-@api_checks.get("/readyness")
-async def readyness():
-    """Returns "OK" when both objects are not None, regardless of the status of the bot and the community"""
-    if community is None and amigo is None:
-        raise HTTPException(status_code=202, detail="Not Ready")
-
-    return{"message": "OK"}
-
-
-@api_checks.get("/liveness")
-async def liveness():
-    """Returns "OK" if the community and the bot were loaded fine"""
-    if community.is_ready() is False and amigo.is_ready() is False:
-        raise HTTPException(status_code=500, detail="Internal Error")
-
-    if community.is_ready() is False:
-        raise HTTPException(status_code=503, detail="Community is Offline")
-
-    if amigo.is_ready() is False:
-        raise HTTPException(status_code=503, detail="Bot is gone")
-
-    return {"message": "OK"}
-
-
 """ Configuration  ---- Reads the configuration file and sets up the bot and community"""
 with open(args.config, "r") as stream:
     try:
@@ -91,6 +48,50 @@ if amigo is None:
 print("Username: ", amigo.name)
 print("Plataforma: ", amigo.platform)
 print("OpenAI: ", amigo.client)
+
+
+"""REST API INITIALIZATION --- healthchecks for Readyness and liveness probes"""
+
+
+@asynccontextmanager
+async def contextmanager(api_checks: FastAPI):
+    """yelds to only run on shutdown."""
+
+    print("FastAPI -Context Manager: Started ")
+
+    yield
+
+    print("FastAPI - Context Manager: Stopping the bot and the community")
+
+    # Clean up and release the resources
+    await shutdown_event()
+
+api_checks = FastAPI(lifespan=contextmanager)
+
+
+@api_checks.get("/readiness")
+async def readiness():
+    """Returns "OK" when both objects are not None, regardless of the status of the bot and the community"""
+    if community is None and amigo is None:
+        raise HTTPException(status_code=202, detail="Not Ready")
+
+    return{"message": "OK"}
+
+
+@api_checks.get("/liveness")
+async def liveness():
+    """Returns "OK" if the community and the bot were loaded fine"""
+    if community.is_ready() is False and amigo.is_ready() is False:
+        raise HTTPException(status_code=500, detail="Internal Error")
+
+    if community.is_ready() is False:
+        raise HTTPException(status_code=503, detail="Community is Offline")
+
+    if amigo.is_ready() is False:
+        raise HTTPException(status_code=503, detail="Bot is gone")
+
+    return {"message": "OK"}
+
 
 
 """ Main section starts --- """
