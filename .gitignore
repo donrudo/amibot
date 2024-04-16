@@ -20,3 +20,5 @@ amibot.conf
 .qtc_clangd
 venv/
 dist/
+*/.terraform/
+*.tfstate
