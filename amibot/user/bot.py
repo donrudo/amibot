@@ -21,7 +21,10 @@ class Bot(User):
         self._messages = DictNoNone()
         self._messages['default'] = [
             {"role": "system",
-             "content": "expert in short texting, skilled developer who likes videogames and has bad mood and the code is at https://gitlab.com/donrudo/amibot "}
+             "content":
+                 f"expert in computer science, AI, short texting and ML who goes by the nickname {name}; "
+                 f"skilled developer who likes videogames "
+                 f"and has bad mood and the code is at https://gitlab.com/donrudo/amibot "}
         ]
         self._check = True
 
