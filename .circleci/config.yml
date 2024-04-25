@@ -1,0 +1,47 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@3.1.5
+
+jobs:
+  cloudflare-workers:
+    docker:
+      - image: cloudflare/cloudflared
+    steps:
+      - name: "Push Secrets"
+
+
+  terraform-plan:
+    # Specify the execution environment. You can specify an image from Dockerhub, or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    docker:
+      - image: hashicorp/terraform
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - checkout
+      - aws-cli/setup:
+          role-arn: ${AWS_IAM_OIDC_ROLE}
+          aws-region: ${AWS_REGION}
+          profile-name: ${OIDC-PROFILE}
+          role-session-name: "example-session"
+          session-duration: "1800"
+      - run:
+            name: "Verify"
+            command: "verify"
+      - run:
+            name: "Plan"
+            command: "plan"
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  infra-workflow:
+    jobs:
+      - terraform-plan:
+          context: terraform
+  app-workflow:
+    jobs:
+      - cloudflare-workers:
+          context: cloudflare
