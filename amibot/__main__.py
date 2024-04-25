@@ -103,16 +103,22 @@ async def shutdown_event():
     amigo.client.close()
 
 
+async def wait():
+    while not asyncio.get_event_loop().is_running():
+        await asyncio.sleep(0.5)
+
+
 def main():
     """Starts the API server for healthchecks and metrics"""
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
 
     api_config = uvicorn.Config(api_checks, host="0.0.0.0", port=23459, loop=loop)
     api_server = uvicorn.Server(api_config)
 
     try:
 
+        asyncio.run(wait())
         loop.create_task(community.start())
 
         try:
@@ -130,5 +136,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # asyncio.run(start())
     main()
