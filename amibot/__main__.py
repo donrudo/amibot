@@ -93,7 +93,6 @@ async def liveness():
     return {"message": "OK"}
 
 
-
 """ Main section starts --- """
 
 
@@ -113,16 +112,21 @@ def main():
     api_server = uvicorn.Server(api_config)
 
     try:
+
         loop.create_task(community.start())
+
         try:
             loop.run_until_complete(api_server.serve())
         except KeyboardInterrupt:
             print("Application stopped by user")
+
     except Exception as e:
         print("Exception: ", e)
+
     else:
-        if loop.is_closed() is not True:
-            loop.close()
+        if loop.is_running():
+            loop.stop()
+        loop.close()
 
 
 if __name__ == "__main__":
