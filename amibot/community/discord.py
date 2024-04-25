@@ -1,5 +1,6 @@
 import discord
 import asyncio
+from discord import mentions,message
 from community import Community
 
 
@@ -33,11 +34,24 @@ class Discord(Community):
 
         @self.client.event
         async def on_message(message):
-            if message.author != self.client.user:
-                print(message.content.capitalize())
-                print(message.author.name)
-                reply = self.bot.chat_completion(message.author.name, message.content.capitalize())
-                await message.channel.send(reply)
+            found = False
+            if message.guild is None or message.mention_everyone:
+                found = True
+            else:
+                for value in message.mentions:
+                    print(type(value), type(discord.member.Member))
+                    if type(value) is discord.member.Member and value.name == self.client.user.name:
+                        found = True
+                        break
+                    else:
+                        print(value)
+
+            if found:
+                if message.author != self.client.user:
+                    print(message.content.capitalize())
+                    print(message.author.name)
+                    reply = self.bot.chat_completion(message.author.name, message.content.capitalize())
+                    await message.channel.send(reply)
 
     def is_ready(self) -> bool:
         return self._check
