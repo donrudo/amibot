@@ -25,7 +25,8 @@ with open(args.config, "r") as stream:
         '''checks for Discord settings'''
         if "discord" in configuration:
             if "enabled" in configuration['discord'] and configuration['discord']['enabled']:
-                amigo = Bot(configuration['amibot']['username'], "Discord", configuration['discord']['public_key'])
+                amigo = Bot(configuration['amibot']['username'], "Discord",
+                            configuration['discord']['public_key'], configuration['amibot']['system_role'])
                 community = Discord(configuration['discord']['token'])
 
         '''checks for openai settings'''

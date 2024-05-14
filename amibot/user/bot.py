@@ -13,18 +13,18 @@ class DictNoNone(dict):
 class Bot(User):
     pass
 
-    def __init__(self, name, platform, secret):
+    def __init__(self, name, platform, secret, system_role=""):
         super().__init__(name, platform, secret)
         self._model = "gpt-4"
         self._engine = ""
         self._client = openai.Client
         self._messages = DictNoNone()
-        self._messages['default'] = [
+        self._messages['system_role'] = [
             {"role": "system",
-             "content":
-                 f"expert in computer science, AI, short texting and ML who goes by the nickname {name}; "
-                 f"skilled developer who likes videogames "
-                 f"and has bad mood and the code is at https://gitlab.com/donrudo/amibot "}
+             "content": f"Goes by the nickname {name}; "
+                        f"answers into Summarized Paragraphs with short and understandable messages;"
+                        f"the code is at https://gitlab.com/donrudo/amibot "
+                        f"{system_role}"}
         ]
         self._check = True
 
@@ -68,27 +68,32 @@ class Bot(User):
     def messages(self, key, value):
         self._messages[key] = value
 
-    # def chat_start(self, name, message) -> dict:
-    #     print("--- NEW CHAT COMPLETION ---")
-    #     chat_start = [
-    #             {"role": "system",
-    #              "content": "expert in short texting developer who likes videogames and has bad mood"},
-    #             {"role": "user", "content": message }
-    #        ]
-    #     return chat_start
-
     def chat_completion(self, name, message) -> str:
-        print("--- CHAT CONVERSATION from:", name)
+        print(f"--- CHAT CONVERSATION from: {name}")
         if name not in self._messages:
-            self._messages[name] = self._messages['default']
+            self._messages[name] = self._messages.get('system_role',[])
 
-        self._messages[name].append({"role": "user", "content": message})
+        self._messages[name].append({"role": "user", "content": f"{name} says {message}"})
 
-        response = self.client.chat.completions.create(
-            stream=False,
+        response_stream = self.client.chat.completions.create(
+            stream=True,
             model=self.model,
             max_tokens=512,
             messages=self._messages[name]
         )
-        self._messages[name].append({"role": "assistant", "content": response.choices[0].message.content})
-        return response.choices[0].message.content
+        assistant_message = ""
+
+        # Process the streaming response
+        for response in response_stream:
+            if response.choices[0].delta.content is not None:
+                message_chunk = response.choices[0].delta.content
+                assistant_message += message_chunk
+                print(f"Received chunk: {message_chunk}")  # Optional: to show progress
+
+        # Append the complete assistant's response
+        self._messages[name].append({"role": "assistant", "content": assistant_message})
+
+        # Return the assistant's complete response
+        return assistant_message
+        # self._messages[name].append({"role": "assistant", "content": response.choices[0].message.content})
+        # return response.choices[0].message.content
