@@ -1,6 +1,7 @@
 .idea/
 helm/
 amibot.conf
+.wrangler
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -22,3 +23,4 @@ venv/
 dist/
 */.terraform/
 *.tfstate
+scripts/local.env
