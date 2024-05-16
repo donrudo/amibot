@@ -1,5 +1,5 @@
 import openai
-from collections import deque
+
 from user import User
 from openai import OpenAI
 
@@ -81,19 +81,19 @@ class Bot(User):
             max_tokens=512,
             messages=self._messages[name]
         )
-        assistant_message = ""
 
         # Process the streaming response
+        assistant_message = ""
+        print_once = True
         for response in response_stream:
+            if print_once:
+                print(response.choices[0].delta.model_config)
+                print_once = False
             if response.choices[0].delta.content is not None:
-                message_chunk = response.choices[0].delta.content
-                assistant_message += message_chunk
-                print(f"Received chunk: {message_chunk}")  # Optional: to show progress
+                assistant_message += response.choices[0].delta.content
 
         # Append the complete assistant's response
         self._messages[name].append({"role": "assistant", "content": assistant_message})
 
         # Return the assistant's complete response
         return assistant_message
-        # self._messages[name].append({"role": "assistant", "content": response.choices[0].message.content})
-        # return response.choices[0].message.content
