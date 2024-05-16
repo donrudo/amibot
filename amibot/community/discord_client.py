@@ -1,6 +1,5 @@
-import discord
 import asyncio
-from discord import mentions,message
+import discord
 from community import Community
 
 
@@ -33,12 +32,12 @@ class Discord(Community):
             print("Error: disconnected from Discord")
 
         @self.client.event
-        async def on_message(message):
+        async def on_message(chat_msg):
             found = False
-            if message.guild is None or message.mention_everyone:
+            if chat_msg.guild is None or chat_msg.mention_everyone:
                 found = True
             else:
-                for value in message.mentions:
+                for value in chat_msg.mentions:
                     print(type(value), type(discord.member.Member))
                     if type(value) is discord.member.Member and value.name == self.client.user.name:
                         found = True
@@ -47,11 +46,17 @@ class Discord(Community):
                         print(value)
 
             if found:
-                if message.author != self.client.user:
-                    print(message.content.capitalize())
-                    print(message.author.name)
-                    reply = self.bot.chat_completion(message.author.name, message.content.capitalize())
-                    await message.channel.send(reply)
+                if chat_msg.author != self.client.user:
+                    print(chat_msg.author.name)
+                    start = 0
+                    msg_limit = 2000
+                    reply = self.bot.chat_completion(chat_msg.author.name, chat_msg.content.capitalize())
+
+                    while start < len(reply):
+                        # TODO: Clumsy split in chunks,
+                        #  needs improvement making sure sentences and format are not broken.
+                        await chat_msg.channel.send(reply[start: start+msg_limit])
+                        start += msg_limit
 
     def is_ready(self) -> bool:
         return self._check
