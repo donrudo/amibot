@@ -1,6 +1,7 @@
-pyyaml
-discord
-openai
-argparse
-fastapi
-uvicorn
+openai~=1.23.6
+fastapi~=0.111.0
+pinecone~=4.0.0
+discord~=2.3.2
+argparse~=1.4.0
+PyYAML~=6.0.1
+uvicorn~=0.29.0
