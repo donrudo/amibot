@@ -5,7 +5,6 @@ from community import Community
 
 class Discord(Community):
     """ Setups the connections and settings for discord interactions """
-    pass
 
     def __init__(self, secret):
         self._check = False
