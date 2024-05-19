@@ -40,10 +40,10 @@ jobs:
           key: cicd_vars
       - run:
           name: "Verify"
-          command: "-chdir=deployment/cloud verify"
+          command: "validate -chdir=deployment/cloud/aws"
       - run:
           name: "Plan"
-          command: "-chdir=deployment/cloud plan"
+          command: "-chdir=deployment/cloud/aws plan"
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -52,5 +52,7 @@ workflows:
     jobs:
       - prepare
       - terraform-plan:
+          requires:
+            - prepare
           context:
             - terraform
