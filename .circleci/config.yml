@@ -32,6 +32,7 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
       - image: hashicorp/terraform
+        entrypoint: "/bin/terraform"
     # Add steps to the job
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
@@ -40,7 +41,7 @@ jobs:
           key: cicd_vars
       - run:
           name: "Verify"
-          command: "validate -chdir=deployment/cloud/aws"
+          command: "-chdir=deployment/cloud/aws validate"
       - run:
           name: "Plan"
           command: "-chdir=deployment/cloud/aws plan"
