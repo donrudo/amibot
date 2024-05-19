@@ -11,7 +11,6 @@ data "aws_iam_policy_document" "policy" {
 }
 
 data "aws_iam_policy_document" "assume" {
-  name = "policy.${var.project_name}.${var.env}"
   statement {
     effect = "Allow"
     principals {
@@ -34,6 +33,6 @@ resource "aws_iam_role" "container_role" {
 
 resource "aws_iam_policy_attachment" "s3_ro" {
   name = "attachment.${var.project_name}.${var.env}"
-  role = aws_iam_role.container_role
+  roles = [aws_iam_role.container_role]
   policy_arn = aws_iam_policy.policy.arn
 }
