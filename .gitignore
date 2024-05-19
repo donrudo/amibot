@@ -24,3 +24,4 @@ dist/
 */.terraform/
 *.tfstate
 scripts/local.env
+deployment/cloud/aws/cicd_vars.tf
