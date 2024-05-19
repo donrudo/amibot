@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
+import argparse
+import uvicorn
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 
 from configloader.FromFile import FromFile
 from configloader.FromS3 import FromS3
-
 from user.bot import Bot
-import asyncio
 from community.discord_client import Discord
-import argparse
-import uvicorn
 
 # REST API INITIALIZATION --- healthchecks for Readyness and liveness probes #
 
@@ -99,14 +98,20 @@ def main():
 if __name__ == "__main__":
 
     amigo = None
+    community = None
+    load = None
+
+    # Parse arguments
     parser = argparse.ArgumentParser(prog='Amibot', add_help=True)
     parser.add_argument('-c', '--config', type=str, help='Path to configuration file of:'
                                                          '-- file:/path/to/localfile.yaml'
-                                                         '-- https://s3_bucket.endpoint/remote/location.yaml'
-                                                         '-- vault://hashicorp_vault_project/app/keys.location'
-                                                         '-- kv://cloudflare_namespace/keys.location ? ')
+                                                         '-- https://s3.endpoint/bucket/remote/location.yaml'
+                                                         '-- s3://bucket/remote/location.yaml')
+                                                         # TODO '-- vault://hashicorp_vault_project/app/keys.location'
+                                                         # TODO '-- kv://cloudflare_namespace/keys.location ? ')
     args = parser.parse_args()
 
+    # Load Configuration file
     location = args.config.split(':')
     match location[0]:
         case 'file':
@@ -116,10 +121,15 @@ if __name__ == "__main__":
         case 's3':
             load = FromS3(args.config)
         case _:
-            exit(1)
+            if len(location) == 1:
+                print('No specific protocol identified, assuming local file')
+                load = FromFile(args.config)
+    if load:
+        configuration = load.configuration
+    else:
+        exit(1)
 
-    configuration = load.configuration
-    # Configuration  ---- Reads the configuration file and sets up the bot and community
+    # Configuration  ---- Reads the configuration settings and sets up the bot and community
     if configuration:
         # try:
         if "amibot" not in configuration:
@@ -140,12 +150,6 @@ if __name__ == "__main__":
                 amigo.engine = 'openai'
                 amigo.client = configuration['openai']['key']
                 community.bot = amigo
-
-        # except yaml.YAMLError as exc:
-        #     amigo = Bot("amigo", "test", "secreto")
-        #     print("Username: ", amigo.name)
-        #     print("Plataforma: ", amigo.platform)
-        #     print("Exception: ", exc)
 
     if amigo is None:
         exit(1)
