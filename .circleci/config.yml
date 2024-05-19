@@ -9,9 +9,9 @@ jobs:
     steps:
       - checkout
       - run:
-          command: "pip install yaml"
+          command: "python3 -m venv venv; source venv/bin/activate; python3 -m pip install yaml"
       - run:
-          command: "scripts/get_variablestf.py"
+          command: "source venv/bin/activate; scripts/get_variablestf.py"
       - save_cache:
           key: cicd_vars
           paths:
