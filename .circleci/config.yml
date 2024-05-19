@@ -39,6 +39,9 @@ jobs:
       - restore_cache:
           key: cicd_vars
       - run:
+          name: "Init"
+          command: "terraform -chdir=deployment/cloud/aws init"
+      - run:
           name: "Verify"
           command: "terraform -chdir=deployment/cloud/aws validate"
       - run:
