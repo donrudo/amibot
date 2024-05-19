@@ -9,6 +9,8 @@ jobs:
     steps:
       - checkout
       - run:
+          command: "pip install yaml"
+      - run:
           command: "scripts/get_variablestf.py"
       - save_cache:
           key: cicd_vars
