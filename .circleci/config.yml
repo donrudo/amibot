@@ -9,7 +9,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: "python3 -m venv venv; source venv/bin/activate; python3 -m pip install yaml"
+          command: "python3 -m venv venv; source venv/bin/activate; python3 -m pip install PyYAML"
       - run:
           command: "source venv/bin/activate; scripts/get_variablestf.py"
       - save_cache:
