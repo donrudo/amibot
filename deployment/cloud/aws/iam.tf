@@ -4,8 +4,7 @@ data "aws_iam_policy_document" "policy" {
     effect    = "Allow"
     actions   = ["s3:GetObject",]
     resources = [
-      "arn:aws:s3:::${var.bucket_name}",
-      "arn:aws:s3:::${var.bucket_name}/${var.project_name}/*",
+      "arn:aws:s3:::${var.s3_uri}",
     ]
   }
 }
