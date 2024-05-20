@@ -8,10 +8,6 @@ variable "project_name" {
   type=string
 }
 
-variable "current_dir" {
-  type=string
-}
-
-variable "bucket_name" {
+variable "s3_uri" {
   type=string
 }

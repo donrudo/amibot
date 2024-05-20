@@ -23,7 +23,7 @@ resource aws_ecs_task_definition "tsk_amibot" {
     {
       essential = true
       image = "${var.image}:${var.image_version}"
-      entryPoint: ["scripts/start.sh", var.bucket_name]
+      entryPoint: ["scripts/start.sh", var.s3_uri]
     }
   ])
 
