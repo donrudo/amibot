@@ -22,8 +22,9 @@ def read_fromyaml(path):
     with open(path, 'r') as stream:
         try:
             ci_yaml = yaml.safe_load(stream)
-            for tf_var in ci_yaml["jobs"]["terraform-plan"]["environment"]:
-                envars_list.append(tf_var[7:])
+            if "environment" in ci_yaml["jobs"]["terraform-plan"]:
+                for tf_var in ci_yaml["jobs"]["terraform-plan"]["environment"]:
+                    envars_list.append(tf_var[7:])
 
         except yaml.YAMLError as exc:
             print(f'Got exception: \n {exc}')
