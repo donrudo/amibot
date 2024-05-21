@@ -69,13 +69,9 @@ workflows:
   infra-workflow:
     jobs:
       - prepare
-      - terraform-init:
-          context:
-            - terraform
       - terraform-plan:
           requires:
             - prepare
-            - terraform-init
           context:
             - terraform
       - terraform-approve:
