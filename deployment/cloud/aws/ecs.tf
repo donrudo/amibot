@@ -21,6 +21,7 @@ resource aws_ecs_task_definition "tsk_amibot" {
   execution_role_arn = aws_iam_role.container_role.arn
   container_definitions = jsonencode([
     {
+      name = "${var.project_name}${var.env}"
       essential = true
       image = "${var.image}:${var.image_version}"
       entryPoint: ["scripts/start.sh", var.s3_uri]
