@@ -11,3 +11,7 @@ variable "project_name" {
 variable "s3_uri" {
   type=string
 }
+
+variable "aws_region" {
+  type=string
+}

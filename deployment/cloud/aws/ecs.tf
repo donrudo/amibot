@@ -12,7 +12,7 @@ resource aws_ecs_service "amibot" {
 }
 
 resource aws_ecs_task_definition "tsk_amibot" {
-  family = "task.${var.project_name}.${var.env}"
+  family = "${var.project_name}${var.env}"
 
   cpu = var.specs_cpu
   memory = var.specs_ram
