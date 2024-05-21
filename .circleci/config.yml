@@ -9,8 +9,10 @@ jobs:
     steps:
       - checkout
       - run:
+          name: "YAML dependencies"
           command: "python3 -m venv venv; source venv/bin/activate; python3 -m pip install PyYAML"
       - run:
+          name: "Generate variables.tf"
           command: "source venv/bin/activate; scripts/get_variablestf.py"
       - save_cache:
           key: cicd_vars
@@ -29,8 +31,7 @@ jobs:
           name: "Configure Settings"
           command: "cp configs/cloud_settings.json deployment/cloud/aws"
       - restore_cache:
-          key:
-            - cicd_vars
+          key: cicd_vars
       - run:
           name: "Init"
           command: "terraform -chdir=deployment/cloud/aws init"
@@ -54,8 +55,7 @@ jobs:
           name: "Configure Settings"
           command: "cp configs/cloud_settings.json deployment/cloud/aws"
       - restore_cache:
-          keys:
-            - cicd_vars
+          key: cicd_vars
       - run:
           name: "Init"
           command: "terraform -chdir=deployment/cloud/aws init"
