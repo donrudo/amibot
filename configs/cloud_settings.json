@@ -1,0 +1,10 @@
+{
+  "ecs_cluster": "botfarm",
+  "scale_min": "1",
+  "ecs_service": "amibot",
+  "specs_cpu": "2",
+  "specs_ram": "64",
+  "image": "registry.gitlab.com/donrudo/amibot",
+  "image_version": "0.0.4",
+  "env": "dev"
+}
