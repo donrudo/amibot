@@ -43,6 +43,24 @@ jobs:
           name: "Plan"
           command: "terraform -chdir=deployment/cloud/aws plan -var-file=cloud_settings.json "
 
+  terraform-apply:
+    # Specify the execution environment. You can specify an image from Dockerhub, or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    docker:
+      - image: hashicorp/terraform
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - checkout
+      - run:
+          name: "Configure Settings"
+          command: "cp configs/cloud_settings.json deployment/cloud/aws"
+      - restore_cache:
+          key: cicd_vars
+      - run:
+          name: "Deploy"
+          command: "terraform -chdir=deployment/cloud/aws apply -auto-approve -var-file=cloud_settings.json"
+
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
@@ -54,3 +72,9 @@ workflows:
             - prepare
           context:
             - terraform
+      - terraform-apply:
+          requires:
+            - terraform-plan
+          context:
+            - terraform
+          type: approval
