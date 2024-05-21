@@ -70,7 +70,9 @@ jobs:
           name: "Configure Settings"
           command: "cp configs/cloud_settings.json deployment/cloud/aws"
       - restore_cache:
-          key: cicd_vars
+          keys:
+            - cicd_vars
+            - init_files
       - run:
           name: "Deploy"
           command: "terraform -chdir=deployment/cloud/aws apply -auto-approve -var-file=cloud_settings.json"
