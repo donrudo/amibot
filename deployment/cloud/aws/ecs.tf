@@ -1,5 +1,5 @@
 resource "aws_ecs_cluster" "botfarm" {
-  name = "${var.ecs_cluster}.${var.project_name}.${var.env}"
+  name = "${var.ecs_cluster}${var.project_name}-${var.env}"
 }
 
 resource aws_ecs_service "amibot" {
