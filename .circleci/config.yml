@@ -38,7 +38,7 @@ jobs:
           command: "terraform -chdir=deployment/cloud/aws init -var-file=cloud_settings.json "
       - run:
           name: "Verify"
-          command: "terraform -chdir=deployment/cloud/aws validate -var-file=cloud_settings.json "
+          command: "terraform -chdir=deployment/cloud/aws validate "
       - run:
           name: "Plan"
           command: "terraform -chdir=deployment/cloud/aws plan -var-file=cloud_settings.json "
