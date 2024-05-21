@@ -30,6 +30,10 @@ jobs:
       - run:
           name: "Init"
           command: "terraform -chdir=deployment/cloud/aws init"
+      - save_cache:
+          key: init_files
+          paths:
+            - deployment/cloud/aws/.terraform
   terraform-plan:
     # Specify the execution environment. You can specify an image from Dockerhub, or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
@@ -43,7 +47,9 @@ jobs:
           name: "Configure Settings"
           command: "cp configs/cloud_settings.json deployment/cloud/aws"
       - restore_cache:
-          key: cicd_vars
+          keys:
+            - cicd_vars
+            - init_files
       - run:
           name: "Verify"
           command: "terraform -chdir=deployment/cloud/aws validate "
