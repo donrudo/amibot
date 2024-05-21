@@ -3,6 +3,8 @@
 version: 2.1
 
 jobs:
+  var:
+
   prepare:
     docker:
       - image: python:3
@@ -18,16 +20,6 @@ jobs:
             - deployment/cloud/aws/cicd_vars.tf
 
   terraform-plan:
-    environment:
-      TF_VAR_ecs_cluster: "botfarm"
-      TF_VAR_scale_min: "1"
-      TF_VAR_ecs_service: "amibot"
-      TF_VAR_specs_cpu: "2"
-      TF_VAR_specs_ram: "64"
-      TF_VAR_image: "registry.gitlab.com/donrudo/amibot"
-      TF_VAR_image_version: "0.0.4"
-      TF_VAR_env: "dev"
-
     # Specify the execution environment. You can specify an image from Dockerhub, or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
     docker:
@@ -36,17 +28,20 @@ jobs:
     # See: https://circleci.com/docs/2.0/configuration-reference/#steps
     steps:
       - checkout
+      - run:
+          name: "Configure Settings"
+          command: "cp configs/cloud_settings.json deployment/cloud/aws"
       - restore_cache:
           key: cicd_vars
       - run:
           name: "Init"
-          command: "terraform -chdir=deployment/cloud/aws init"
+          command: "terraform -chdir=deployment/cloud/aws init -var-file=cloud_settings.json "
       - run:
           name: "Verify"
-          command: "terraform -chdir=deployment/cloud/aws validate"
+          command: "terraform -chdir=deployment/cloud/aws validate -var-file=cloud_settings.json "
       - run:
           name: "Plan"
-          command: "terraform -chdir=deployment/cloud/aws plan"
+          command: "terraform -chdir=deployment/cloud/aws plan -var-file=cloud_settings.json "
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
