@@ -18,7 +18,18 @@ jobs:
           key: cicd_vars
           paths:
             - deployment/cloud/aws/cicd_vars.tf
-
+  terraform-init:
+    # Specify the execution environment. You can specify an image from Dockerhub, or use one of our Convenience Images from CircleCI's Developer Hub.
+    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
+    docker:
+      - image: hashicorp/terraform
+    # Add steps to the job
+    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+    steps:
+      - checkout
+      - run:
+          name: "Init"
+          command: "terraform -chdir=deployment/cloud/aws init"
   terraform-plan:
     # Specify the execution environment. You can specify an image from Dockerhub, or use one of our Convenience Images from CircleCI's Developer Hub.
     # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
@@ -33,9 +44,6 @@ jobs:
           command: "cp configs/cloud_settings.json deployment/cloud/aws"
       - restore_cache:
           key: cicd_vars
-      - run:
-          name: "Init"
-          command: "terraform -chdir=deployment/cloud/aws init -var-file=cloud_settings.json "
       - run:
           name: "Verify"
           command: "terraform -chdir=deployment/cloud/aws validate "
@@ -67,14 +75,21 @@ workflows:
   infra-workflow:
     jobs:
       - prepare
+      - terraform-init:
+          context:
+            - terraform
       - terraform-plan:
           requires:
             - prepare
+            - terraform-init
           context:
             - terraform
-      - terraform-apply:
+      - terraform-approve:
           requires:
             - terraform-plan
+          type: approval
+      - terraform-apply:
+          requires:
+            - terraform-approve
           context:
             - terraform
-          type: approval
