@@ -21,17 +21,17 @@ data "aws_iam_policy_document" "assume" {
 }
 
 resource "aws_iam_policy" "policy" {
-  name = "policy.${var.project_name}.${var.env}"
+  name = "policy${var.project_name}_${var.env}"
   policy = data.aws_iam_policy_document.policy.json
 }
 
 resource "aws_iam_role" "container_role" {
-  name = "role.${var.project_name}.${var.env}"
+  name = "role${var.project_name}_${var.env}"
   assume_role_policy = data.aws_iam_policy_document.assume.json
 }
 
 resource "aws_iam_policy_attachment" "s3_ro" {
-  name = "attachment.${var.project_name}.${var.env}"
+  name = "attachment${var.project_name}_${var.env}"
   roles = [aws_iam_role.container_role.name]
   policy_arn = aws_iam_policy.policy.arn
 }
