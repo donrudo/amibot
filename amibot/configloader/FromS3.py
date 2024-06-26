@@ -19,6 +19,8 @@ class FromS3(ConfigLoader):
         print(f'{self._bucket} , {self._location}')
         super().__init__(path='FromS3')
 
+    # configuration
+    # Returns dict if the S3 object is a valid yaml structure else returns None
     @property
     def configuration(self):
         s3_client = boto3.client('s3')
