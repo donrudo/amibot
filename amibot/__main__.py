@@ -8,6 +8,8 @@ from fastapi import FastAPI, HTTPException
 from configloader.FromFile import FromFile
 from configloader.FromS3 import FromS3
 from user.bot import Bot
+from user.bot_anthropic import AnthropicBot
+from user.bot_openai import OpenaiBot
 from community.discord_client import Discord
 
 # REST API INITIALIZATION --- healthchecks for Readyness and liveness probes #
@@ -29,8 +31,8 @@ async def contextmanager(api_checks: FastAPI):
 api_checks = FastAPI(lifespan=contextmanager)
 
 
-@api_checks.get("/readiness")
-async def readiness():
+@api_checks.get("/liveness")
+async def liveness():
     # Returns "OK" when both objects are not None, regardless of the status of the bot and the community #
     if community is None and amigo is None:
         raise HTTPException(status_code=202, detail="Not Ready")
@@ -38,8 +40,8 @@ async def readiness():
     return{"message": "OK"}
 
 
-@api_checks.get("/liveness")
-async def liveness():
+@api_checks.get("/readiness")
+async def readiness():
     # Returns "OK" if the community and the bot were loaded fine #
     if community.is_ready() is False and amigo.is_ready() is False:
         raise HTTPException(status_code=500, detail="Internal Error")
@@ -139,23 +141,38 @@ if __name__ == "__main__":
         # checks for Discord settings
         if "discord" in configuration:
             if "enabled" in configuration['discord'] and configuration['discord']['enabled']:
-                amigo = Bot(configuration['amibot']['username'], "Discord",
-                            configuration['discord']['public_key'], configuration['amibot']['system_role'])
                 community = Discord(configuration['discord']['token'])
 
-        # checks for openai settings
-        if amigo and community and "openai" in configuration:
-            if "enabled" in configuration['openai'] and configuration['openai']["enabled"]:
-                amigo.model = configuration['openai']['model']
-                amigo.engine = 'openai'
-                amigo.client = configuration['openai']['key']
+        # checks for bot settings
+        if "llm" in configuration:
+            if "enabled" in configuration['llm'] and configuration['llm']["enabled"]:
+                print(f"configure bot: {configuration['llm']['provider']} ")
+                match str.lower(configuration['llm']['provider']):
+                    case "openai":
+                        amigo = OpenaiBot(configuration['amibot']['username'],
+                                          configuration['llm']['provider'],
+                                          configuration['llm']['key'],
+                                          configuration['llm']['tokens_range']['from'],
+                                          configuration['llm']['tokens_range']['until'],
+                                          configuration['llm']['tokens_range']['increment'],
+                                          configuration['amibot']['system_role'])
+                    case "anthropic":
+                        amigo = AnthropicBot(configuration['amibot']['username'],
+                                             configuration['llm']['provider'],
+                                             configuration['llm']['key'],
+                                             configuration['llm']['tokens_range']['from'],
+                                             configuration['llm']['tokens_range']['until'],
+                                             configuration['llm']['tokens_range']['increment'],
+                                             configuration['amibot']['system_role'])
+
+                amigo.model = configuration['llm']['model']
                 community.bot = amigo
 
     if amigo is None:
         exit(1)
 
     print("Username: ", amigo.name)
-    print("Plataforma: ", amigo.platform)
-    print("OpenAI: ", amigo.client)
+    print("Plataforma: ", amigo.llmprovider)
+    print("Model: ", amigo.model)
 
     main()
