@@ -2,9 +2,9 @@ class User:
     """Bot properties to be used, add openAI behaviors
     and user interactions here"""
 
-    def __init__(self, name, platform, secret):
+    def __init__(self, name, llmprovider, secret):
         self._name = name
-        self._platform = platform
+        self._llmprovider = llmprovider
         self._check = False
 
     def __str__(self):
@@ -20,7 +20,7 @@ class User:
 
     @property
     def platform(self):
-        return self._platform
+        return self._llmprovider
 
     @name.setter
     def name(self, value):
