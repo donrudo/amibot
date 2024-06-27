@@ -1,8 +1,6 @@
-import openai
-from collections import deque
-from user import User
-from openai import OpenAI
+import re
 
+from user import User
 
 class DictNoNone(dict):
     def __setitem__(self, key, value):
@@ -13,15 +11,17 @@ class DictNoNone(dict):
 class Bot(User):
     pass
 
-    def __init__(self, name, platform, secret):
-        super().__init__(name, platform, secret)
-        self._model = "gpt-4"
-        self._engine = ""
-        self._client = openai.Client
+    def __init__(self, name, llmprovider, secret, system_role=""):
+        super().__init__(name, llmprovider, secret)
+        self._model = "unset"
+        self._client = "unset"
         self._messages = DictNoNone()
-        self._messages['default'] = [
+        self._messages['system_role'] = [
             {"role": "system",
-             "content": "expert in short texting, skilled developer who likes videogames and has bad mood and the code is at https://gitlab.com/donrudo/amibot "}
+             "content": f"Goes by the nickname {name}; "
+                        f"Summarized Paragraphs with short and understandable messages;"
+                        f"the code is at https://gitlab.com/donrudo/amibot "
+                        f"{system_role}"}
         ]
         self._check = True
 
@@ -30,8 +30,12 @@ class Bot(User):
         return self._model
 
     @property
-    def engine(self):
-        return self._engine
+    def llmprovider(self):
+        return self._llmprovider
+
+    @property
+    def token_limits(self):
+        return self._token_limits
 
     @property
     def client(self):
@@ -44,9 +48,13 @@ class Bot(User):
     def messages(self):
         return self._messages
 
-    @engine.setter
-    def engine(self, value):
-        self._engine = value
+    @token_limits.setter
+    def token_limits(self, value):
+        self.token_limits = value
+
+    @llmprovider.setter
+    def llmprovider(self, value):
+        self._llmprovider = value
 
     @model.setter
     def model(self, value):
@@ -54,38 +62,22 @@ class Bot(User):
 
     @client.setter
     def client(self, token):
-        self._client = OpenAI(api_key=token)
-        if self._client.is_closed():
-            self._check = False
-        else:
-            self._check = True
-        print("Connected to OpenAI API")
+        self._check = True
+        print("Connected to None")
 
     @messages.setter
     def messages(self, key, value):
         self._messages[key] = value
 
-    # def chat_start(self, name, message) -> dict:
-    #     print("--- NEW CHAT COMPLETION ---")
-    #     chat_start = [
-    #             {"role": "system",
-    #              "content": "expert in short texting developer who likes videogames and has bad mood"},
-    #             {"role": "user", "content": message }
-    #        ]
-    #     return chat_start
+    # function from https://www.geeksforgeeks.org/python-check-url-string/
+    def get_urls(self, input: str):
+        url_pattern = r'https?://[^\s<>"]+|www\.[^\s<>"]+'
+        url_mask = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+        url = re.findall(url_mask, input)
+        return [x[0] for x in url]
 
     def chat_completion(self, name, message) -> str:
-        print("--- CHAT CONVERSATION from:", name)
-        if name not in self._messages:
-            self._messages[name] = self._messages['default']
+        print(f"--- CHAT CONVERSATION from: {name}")
 
-        self._messages[name].append({"role": "user", "content": message})
-
-        response = self.client.chat.completions.create(
-            stream=False,
-            model=self.model,
-            max_tokens=512,
-            messages=self._messages[name]
-        )
-        self._messages[name].append({"role": "assistant", "content": response.choices[0].message.content})
-        return response.choices[0].message.content
+        # Return the assistant's complete response
+        return f"Hello {name} you said {message}"

@@ -1,6 +1,7 @@
 .idea/
 helm/
 amibot.conf
+.wrangler
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
@@ -20,3 +21,9 @@ amibot.conf
 .qtc_clangd
 venv/
 dist/
+*/.terraform/
+*.tfstate
+scripts/local.env
+deployment/cloud/aws/cicd_vars.tf
+deployment/cloud/aws/*.json
+node_modules

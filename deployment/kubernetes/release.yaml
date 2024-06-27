@@ -2,9 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: amibot
+  namespace: development
   labels:
     app: amibot
-    version: v0.0.1
+    version: v0.0.5
 spec:
   replicas: 1
   selector:
@@ -15,11 +16,13 @@ spec:
       name: amibot
       labels:
         app: amibot
+        mode: gateway
     spec:
       containers:
         - name: amibot
-          image: amibot:0.0.1
-          imagePullPolicy: Never
+          image: registry.gitlab.com/donrudo/amibot:0.0.5
+          imagePullPolicy: Always
+          command: ['scripts/start.sh','configs/amibot.yaml']
           volumeMounts:
             - mountPath: /nonexistent/configs
               name: config-volume
@@ -37,6 +40,7 @@ spec:
               port: 23459
             initialDelaySeconds: 5
             periodSeconds: 5
+      dnsPolicy: "ClusterFirstWithHostNet"
       restartPolicy: Always
       volumes:
         - name: config-volume

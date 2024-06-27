@@ -1,3 +1,9 @@
 #!/usr/bin/env bash
 
-python3 amibot -c configs/amibot.conf
+source venv/bin/activate
+
+if [ -n "$1" ]; then
+  python3 amibot -c configs/amibot.conf
+else
+  python3 amibot -c $1
+fi

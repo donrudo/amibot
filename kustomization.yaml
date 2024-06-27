@@ -1,5 +1,6 @@
 configMapGenerator:
 - name: amibot-config
+  namespace: development
   options:
     labels:
       app: amibot
