@@ -29,7 +29,7 @@ class AnthropicBot(Bot):
             self._check = False
         else:
             self._check = True
-        print("Connected to OpenAI API")
+        print("Connected to Anthropic")
 
     # function from https://www.geeksforgeeks.org/python-check-url-string/
     def get_urls(self, input: str):
@@ -76,6 +76,9 @@ class AnthropicBot(Bot):
                         print(f'Consumed Tokens: {consumed_resource}')
                         break
                     case "max_tokens":
+                        if consumed_resource > self.token_limits[-1]:
+                            print(f'Consumed Tokens: {consumed_resource}')
+                            assistant_message = f"Max tokens limit reached, {response_stream.get_final_text()}"
                         print(assistant_message)
                         continue
                     case "*":
