@@ -1,7 +1,6 @@
 openai~=1.61.1
 fastapi~=0.115.8
 discord>=2.3.2
-spglib>=2.5.0
 PyYAML~=6.0.2
 setuptools~=75.2.0
 uvicorn~=0.34.0
