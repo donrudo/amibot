@@ -1,6 +1,6 @@
-FROM python:3-slim 
+FROM python:3.13-slim
 
-MAINTAINER "carlosm"
+LABEL MAINTAINER="carlosm"
 
 COPY ./LICENSE ./setup.* ./requirements.txt ./README.md ./pyproject.toml /nonexistent/
 COPY ./scripts /nonexistent/scripts
@@ -10,8 +10,8 @@ RUN apt update && \
     apt upgrade -y && \
     mkdir /nonexistent/configs && \
     chown nobody -R /nonexistent && \
-    chmod +750 /nonexistent/scripts && \
-    cd /nonexistent/ && \
+    chmod +750 /nonexistent/scripts
+RUN cd /nonexistent/ && \
     ./scripts/build.sh
 
 USER nobody
