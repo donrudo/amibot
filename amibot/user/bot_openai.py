@@ -23,39 +23,8 @@ class OpenaiBot(Bot):
         self._check = True
 
     @property
-    def model(self):
-        return self._model
-
-    @property
-    def llmprovider(self):
-        return self._llmprovider
-
-    @property
-    def token_limits(self):
-        return self._token_limits
-
-    @property
     def client(self):
         return self._client
-
-    def is_ready(self):
-        return self._check
-
-    @property
-    def messages(self):
-        return self._messages
-
-    @token_limits.setter
-    def token_limits(self, value):
-        self.token_limits = value
-
-    @llmprovider.setter
-    def llmprovider(self, value):
-        self._llmprovider = value
-
-    @model.setter
-    def model(self, value):
-        self._model = value
 
     @client.setter
     def client(self, token):
@@ -65,10 +34,6 @@ class OpenaiBot(Bot):
         else:
             self._check = True
         print("Connected to OpenAI API")
-
-    @messages.setter
-    def messages(self, key, value):
-        self._messages[key] = value
 
     # function from https://www.geeksforgeeks.org/python-check-url-string/
     def get_urls(self, input: str):
@@ -103,14 +68,19 @@ class OpenaiBot(Bot):
             # print(f'Total tokens: {response_stream.usage.total_tokens}')
 
             for response in response_stream:
-                if response.choices[0].finish_reason == "length":
+                if response.choices[0].finish_reason == "length" and token_limit < self.token_limits[-1]:
                     completed = False
                     break
+
+                if token_limit >= self.token_limits[-1]:
+                    assistant_message = f"Max tokens limit reached, "
 
                 if response.choices[0].delta.content is not None:
                     assistant_message += response.choices[0].delta.content
 
             if completed:
+                print(f"Model: {self.model}")
+
                 break
 
         # Append the complete assistant's response
