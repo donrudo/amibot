@@ -29,10 +29,9 @@ class Discord(Community):
                 await self.client.login(self.secret)
 
         @self.client.event
-        # async def on_error(first=None, second=None):
-        async def on_error():
-            # if first is not None:
-            #     print(f'Error at {first}: \n\t{second}')
+        async def on_error(first=None, second=None):
+            if first is not None:
+                print(f'Error at {first}: \n\t{second}')
             self._check = False
             print("Error: disconnected from Discord")
 
@@ -56,10 +55,10 @@ class Discord(Community):
 
             if found:
                 if chat_msg.author != self.client.user:
-                    print(f'msg from: {chat_msg.author.name}')
+                    # print(f'msg from: {chat_msg.author.name}')
 
                     reply = self.bot.chat_completion(chat_msg.author.name, chat_msg.content.capitalize())
-                    print(f'{reply}')
+                    # print(f'{reply}')
                     msgs = split_into_chunks(reply)
                     sent = 0
 

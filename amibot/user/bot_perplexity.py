@@ -5,12 +5,12 @@ from user.bot import DictNoNone, Bot
 from openai import OpenAI
 
 
-class OpenaiBot(Bot):
+class PerplexityBot(Bot):
 
     def __init__(self, name, llmprovider, secret, token_min, token_max, token_increment, system_role=""):
         super().__init__(name, llmprovider, "")
-        self._model = "gpt-4o"
-        self._client = openai.Client(api_key=secret)
+        self._model = "sonar"
+        self._client = openai.Client(api_key=secret,  base_url="https://api.perplexity.ai")
         self._token_limits = range(token_min, token_max, token_increment)
         self._messages = DictNoNone()
         self._messages['system_role'] = [
@@ -33,7 +33,7 @@ class OpenaiBot(Bot):
             self._check = False
         else:
             self._check = True
-        print("Connected to OpenAI API")
+        print("Connected to Perplexity API")
 
     # function from https://www.geeksforgeeks.org/python-check-url-string/
     def get_urls(self, input: str):
