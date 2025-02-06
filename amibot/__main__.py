@@ -11,6 +11,8 @@ from user.bot import Bot
 from user.bot_anthropic import AnthropicBot
 from user.bot_openai import OpenaiBot
 from community.discord_client import Discord
+from user.bot_perplexity import PerplexityBot
+
 
 # REST API INITIALIZATION --- healthchecks for Readyness and liveness probes #
 
@@ -164,6 +166,14 @@ if __name__ == "__main__":
                                              configuration['llm']['tokens_range']['until'],
                                              configuration['llm']['tokens_range']['increment'],
                                              configuration['amibot']['system_role'])
+                    case "perplexity":
+                        amigo = PerplexityBot(configuration['amibot']['username'],
+                                          configuration['llm']['provider'],
+                                          configuration['llm']['key'],
+                                          configuration['llm']['tokens_range']['from'],
+                                          configuration['llm']['tokens_range']['until'],
+                                          configuration['llm']['tokens_range']['increment'],
+                                          configuration['amibot']['system_role'])
 
                 amigo.model = configuration['llm']['model']
                 community.bot = amigo
