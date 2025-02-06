@@ -5,7 +5,7 @@ metadata:
   namespace: development
   labels:
     app: amibot
-    version: v0.0.5
+    version: v0.6.0
 spec:
   replicas: 1
   selector:
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: amibot
-          image: registry.gitlab.com/donrudo/amibot:0.0.5
+          image: registry.gitlab.com/donrudo/amibot:0.0.6.0
           imagePullPolicy: Always
           command: ['scripts/start.sh','configs/amibot.yaml']
           volumeMounts:
