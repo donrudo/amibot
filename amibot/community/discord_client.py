@@ -55,10 +55,10 @@ class Discord(Community):
 
             if found:
                 if chat_msg.author != self.client.user:
-                    print(f'msg from: {chat_msg.author.name}')
+                    # print(f'msg from: {chat_msg.author.name}')
 
                     reply = self.bot.chat_completion(chat_msg.author.name, chat_msg.content.capitalize())
-                    print(f'{reply}')
+                    # print(f'{reply}')
                     msgs = split_into_chunks(reply)
                     sent = 0
 
