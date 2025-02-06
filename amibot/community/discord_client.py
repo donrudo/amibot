@@ -29,10 +29,9 @@ class Discord(Community):
                 await self.client.login(self.secret)
 
         @self.client.event
-        # async def on_error(first=None, second=None):
-        async def on_error():
-            # if first is not None:
-            #     print(f'Error at {first}: \n\t{second}')
+        async def on_error(first=None, second=None):
+            if first is not None:
+                print(f'Error at {first}: \n\t{second}')
             self._check = False
             print("Error: disconnected from Discord")
 
