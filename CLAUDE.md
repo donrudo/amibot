@@ -5,6 +5,7 @@
 **Repository**: https://gitlab.com/donrudo/amibot
 **Python Version**: 3.10+
 **Current Version**: 0.0.2
+**Security**: CVE-2025-47273 fixed (setuptools upgraded to >=78.1.1)
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
@@ -1081,6 +1082,7 @@ From `README.md`:
 - Added development guidelines
 - Added deployment instructions
 - Documented known issues and TODOs
+- **Security Fix**: Updated setuptools from 75.2.0 to >=78.1.1 to fix CVE-2025-47273 (path traversal vulnerability)
 
 ---
 
