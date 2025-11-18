@@ -47,7 +47,7 @@ AmiBot is a Discord bot that provides conversational AI capabilities through mul
 - **CI/CD**: CircleCI
 - **IaC**: Terraform
 
-**For Detailed Diagrams**: See [TECHNICAL_DIAGRAMS.md](TECHNICAL_DIAGRAMS.md) for comprehensive:
+**For Detailed Diagrams**: See [documentation/TECHNICAL_DIAGRAMS.md](documentation/TECHNICAL_DIAGRAMS.md) for comprehensive:
 - Class diagrams with full inheritance hierarchy
 - Sequence diagrams for all major flows
 - State diagrams for bot and Discord lifecycles
@@ -133,7 +133,7 @@ AmiBot includes comprehensive technical diagrams documenting the system architec
 
 ### Available Diagrams
 
-See **[TECHNICAL_DIAGRAMS.md](TECHNICAL_DIAGRAMS.md)** for the complete set of diagrams:
+See **[documentation/TECHNICAL_DIAGRAMS.md](documentation/TECHNICAL_DIAGRAMS.md)** for the complete set of diagrams:
 
 1. **Class Diagram** - Full inheritance hierarchy showing User → Bot → (OpenaiBot/AnthropicBot/PerplexityBot), Community → Discord, and ConfigLoader → (FromFile/FromS3)
 
@@ -162,14 +162,14 @@ See **[TECHNICAL_DIAGRAMS.md](TECHNICAL_DIAGRAMS.md)** for the complete set of d
 
 ### Key Architectural Insights from Diagrams
 
-**Progressive Token Strategy** (see TECHNICAL_DIAGRAMS.md):
+**Progressive Token Strategy** (see documentation/TECHNICAL_DIAGRAMS.md):
 ```
 Start: 256 tokens → API call → Truncated?
   ├─ No: Return complete response
   └─ Yes: Increase to 512 tokens → Retry → ...
 ```
 
-**Per-User Context Isolation** (see TECHNICAL_DIAGRAMS.md):
+**Per-User Context Isolation** (see documentation/TECHNICAL_DIAGRAMS.md):
 ```python
 _messages = {
     'system_role': [...],
@@ -178,7 +178,7 @@ _messages = {
 }
 ```
 
-**Concurrency Model** (see TECHNICAL_DIAGRAMS.md):
+**Concurrency Model** (see documentation/TECHNICAL_DIAGRAMS.md):
 - Single async event loop runs both Discord and FastAPI
 - Discord handlers are async, but bot.chat_completion() is synchronous
 - Multiple users can interact, but conversations are processed sequentially
@@ -1564,7 +1564,7 @@ From `README.md`:
 ## Changelog
 
 ### 2025-11-15 (Update 2)
-- **Added comprehensive technical diagrams** in TECHNICAL_DIAGRAMS.md:
+- **Added comprehensive technical diagrams** in documentation/TECHNICAL_DIAGRAMS.md:
   - Class diagrams with full inheritance hierarchy
   - Sequence diagrams for all major flows (startup, message handling, token strategy, config loading, health checks)
   - State diagrams for bot and Discord lifecycles
