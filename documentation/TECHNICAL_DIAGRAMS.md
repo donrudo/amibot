@@ -1292,3 +1292,400 @@ gantt
 ---
 
 This document now includes comprehensive diagrams for both existing and proposed AmiBot architectures.
+
+## Proposed Architecture: Slack and Signal Communities
+
+**Note**: These diagrams represent proposed features detailed in [FEATURE_PROPOSAL_SLACK_SIGNAL.md](FEATURE_PROPOSAL_SLACK_SIGNAL.md).
+
+### Extended Community Class Hierarchy
+
+```mermaid
+classDiagram
+    %% Base Class
+    class Community {
+        -string _platform
+        -string _secret
+        -Bot _bot
+        -bool _check
+        +__init__(platform, secret)
+        +is_ready() bool
+        +start() async
+        +stop() async
+        +bot property
+    }
+
+    %% Existing Implementation
+    class Discord {
+        -Client client
+        +__init__(secret)
+        +on_connect() async
+        +on_ready() async
+        +on_message(msg) async
+        +split_into_chunks(message) list
+    }
+
+    %% NEW: Slack Implementation
+    class Slack {
+        -AsyncApp app
+        -str _app_token
+        -AsyncSocketModeHandler _handler
+        +__init__(bot_token, app_token, signing_secret)
+        +_register_handlers() void
+        +_handle_message(event, say, client) async
+        +_split_message(message) list
+    }
+
+    %% NEW: Signal Implementation
+    class Signal {
+        -str _phone_number
+        -str _signal_cli_path
+        -Queue _message_queue
+        -Thread _receive_thread
+        +__init__(phone_number, signal_cli_path)
+        +_run_signal_command(command) str
+        +_receive_messages() void
+        +_process_messages() async
+        +_send_message(recipient, message) async
+    }
+
+    %% Relationships
+    Community <|-- Discord : existing
+    Community <|-- Slack : NEW
+    Community <|-- Signal : NEW
+
+    %% External Dependencies
+    class DiscordPy {
+        +Client
+        +Intents
+    }
+
+    class SlackBolt {
+        +AsyncApp
+        +AsyncSocketModeHandler
+    }
+
+    class SignalCLI {
+        +daemon
+        +send
+        +receive
+    }
+
+    Discord --> DiscordPy : uses
+    Slack --> SlackBolt : uses
+    Signal --> SignalCLI : uses
+```
+
+### Slack Integration Architecture
+
+```mermaid
+sequenceDiagram
+    participant User as Slack User
+    participant Workspace as Slack Workspace
+    participant SocketMode as Socket Mode Handler
+    participant SlackBot as Slack Community
+    participant Bot as Bot Instance
+    participant LLM as LLM Provider
+
+    User->>Workspace: @mentions bot / sends DM
+    Workspace->>SocketMode: Event via WebSocket
+
+    SocketMode->>SlackBot: app_mention or message event
+
+    SlackBot->>SlackBot: Extract user, text, channel
+    SlackBot->>Workspace: Get user info
+
+    SlackBot->>Bot: chat_completion(username, message)
+    Bot->>LLM: Stream request
+    LLM-->>Bot: Response chunks
+    Bot-->>SlackBot: Complete response
+
+    SlackBot->>SlackBot: Split message if needed
+
+    loop For each chunk
+        SlackBot->>Workspace: Post message in thread
+        Workspace-->>User: Display response
+    end
+```
+
+### Signal Integration Architecture
+
+```mermaid
+sequenceDiagram
+    participant User as Signal User
+    participant SignalNetwork as Signal Network
+    participant SignalCLI as signal-cli daemon
+    participant SignalBot as Signal Community
+    participant Bot as Bot Instance
+    participant LLM as LLM Provider
+
+    User->>SignalNetwork: Send encrypted message
+    SignalNetwork->>SignalCLI: Deliver message
+
+    SignalCLI->>SignalCLI: Decrypt with local keys
+    SignalCLI->>SignalBot: JSON message via stdout
+
+    SignalBot->>SignalBot: Parse JSON
+    SignalBot->>SignalBot: Queue message
+
+    SignalBot->>Bot: chat_completion(username, message)
+    Bot->>LLM: API request
+    LLM-->>Bot: Response
+    Bot-->>SignalBot: Complete response
+
+    SignalBot->>SignalCLI: send command
+    SignalCLI->>SignalCLI: Encrypt with Signal protocol
+    SignalCLI->>SignalNetwork: Send encrypted message
+    SignalNetwork-->>User: Deliver message
+```
+
+### Multi-Platform Deployment
+
+```mermaid
+graph TB
+    subgraph Users
+        A[Discord User]
+        B[Slack User]
+        C[Signal User]
+    end
+
+    subgraph Platform Services
+        D[Discord API]
+        E[Slack Workspace]
+        F[Signal Network]
+    end
+
+    subgraph AmiBot Pod
+        G[Discord Community]
+        H[Slack Community]
+        I[Signal Community]
+        J[Bot Instance<br/>Shared]
+    end
+
+    subgraph Backend
+        K[LLM Provider<br/>OpenAI/Anthropic/etc]
+    end
+
+    A <-->|WebSocket| D
+    B <-->|Socket Mode| E
+    C <-->|Encrypted| F
+
+    D <-->|discord.py| G
+    E <-->|Slack Bolt| H
+    F <-->|signal-cli| I
+
+    G -->|chat_completion| J
+    H -->|chat_completion| J
+    I -->|chat_completion| J
+
+    J <-->|API| K
+
+    style G fill:#e3f2fd
+    style H fill:#fff4e1
+    style I fill:#c8e6c9
+    style J fill:#ffccbc
+```
+
+### Platform Message Flow Comparison
+
+```mermaid
+graph LR
+    subgraph Discord Flow
+        A1[User Message] --> A2[WebSocket Event]
+        A2 --> A3[on_message]
+        A3 --> A4[Check Mention/DM]
+        A4 --> A5[bot.chat_completion]
+        A5 --> A6[Chunk 2000 chars]
+        A6 --> A7[Send to Channel]
+    end
+
+    subgraph Slack Flow
+        B1[User Message] --> B2[Socket Mode Event]
+        B2 --> B3[app_mention/message]
+        B3 --> B4[Extract User Info]
+        B4 --> B5[bot.chat_completion]
+        B5 --> B6[Chunk 3000 chars]
+        B6 --> B7[Post in Thread]
+    end
+
+    subgraph Signal Flow
+        C1[User Message] --> C2[signal-cli daemon]
+        C2 --> C3[JSON stdout]
+        C3 --> C4[Queue Message]
+        C4 --> C5[bot.chat_completion]
+        C5 --> C6[Chunk 2000 chars]
+        C6 --> C7[signal-cli send]
+    end
+
+    style A5 fill:#ffccbc
+    style B5 fill:#ffccbc
+    style C5 fill:#ffccbc
+```
+
+### Slack App Configuration
+
+```mermaid
+graph TB
+    A[Create Slack App] --> B[Enable Socket Mode]
+    B --> C[Add Bot Scopes]
+    C --> D[Subscribe to Events]
+    D --> E[Install to Workspace]
+    E --> F[Copy Tokens]
+
+    C --> C1[app_mentions:read]
+    C --> C2[chat:write]
+    C --> C3[im:history]
+    C --> C4[im:write]
+    C --> C5[users:read]
+
+    D --> D1[app_mention]
+    D --> D2[message.im]
+    D --> D3[app_home_opened]
+
+    F --> F1[Bot Token<br/>xoxb-...]
+    F --> F2[App Token<br/>xapp-...]
+    F --> F3[Signing Secret]
+
+    style A fill:#e3f2fd
+    style F1 fill:#c8e6c9
+    style F2 fill:#c8e6c9
+    style F3 fill:#c8e6c9
+```
+
+### Signal Setup Flow
+
+```mermaid
+graph TB
+    A[Install signal-cli] --> B{Registration Method}
+
+    B -->|New Number| C[Register Number]
+    C --> D[Receive SMS Code]
+    D --> E[Verify with Code]
+
+    B -->|Existing Account| F[Link Device]
+    F --> G[Generate QR Code]
+    G --> H[Scan with Signal App]
+
+    E --> I[Test Send]
+    H --> I
+
+    I --> J[Start Daemon Mode]
+    J --> K[Configure AmiBot]
+
+    style A fill:#e3f2fd
+    style C fill:#fff4e1
+    style F fill:#fff9c4
+    style K fill:#c8e6c9
+```
+
+### Configuration Patterns
+
+```mermaid
+graph TB
+    subgraph Single Platform
+        A[Configuration File]
+        A --> B[Discord Only]
+        B --> C[One Community<br/>One Bot]
+    end
+
+    subgraph Multi-Platform Same Bot
+        D[Configuration File]
+        D --> E1[Discord Enabled]
+        D --> E2[Slack Enabled]
+        D --> E3[Signal Enabled]
+        E1 --> F[Shared Bot Instance]
+        E2 --> F
+        E3 --> F
+    end
+
+    subgraph Multi-Platform Different Bots
+        G[Configuration File]
+        G --> H1[Discord + OpenAI Bot]
+        G --> H2[Slack + Anthropic Bot]
+        G --> H3[Signal + Local Agent Bot]
+        H1 --> I1[Bot Instance 1]
+        H2 --> I2[Bot Instance 2]
+        H3 --> I3[Bot Instance 3]
+    end
+
+    style C fill:#e3f2fd
+    style F fill:#c8e6c9
+    style I1 fill:#fff4e1
+    style I2 fill:#fff9c4
+    style I3 fill:#ffccbc
+```
+
+### Platform Feature Matrix
+
+```mermaid
+graph LR
+    subgraph Feature Support
+        A[Rich Formatting]
+        B[Threading]
+        C[Encryption]
+        D[File Sharing]
+        E[Reactions]
+        F[Edit Messages]
+    end
+
+    subgraph Discord
+        A --> A1[✅ Markdown]
+        B --> B1[✅ Threads]
+        C --> C1[❌ No E2E]
+        D --> D1[✅ Full Support]
+        E --> E1[✅ Emojis]
+        F --> F1[✅ Yes]
+    end
+
+    subgraph Slack
+        A --> A2[✅ mrkdwn]
+        B --> B2[✅ Threads]
+        C --> C2[❌ No E2E]
+        D --> D2[✅ Full Support]
+        E --> E2[✅ Reactions]
+        F --> F2[✅ Yes]
+    end
+
+    subgraph Signal
+        A --> A3[⚠️ Limited]
+        B --> B3[⚠️ Quotes Only]
+        C --> C3[✅ E2E Default]
+        D --> D3[✅ Full Support]
+        E --> E3[✅ Reactions]
+        F --> F3[❌ No]
+    end
+
+    style A1 fill:#c8e6c9
+    style A2 fill:#c8e6c9
+    style C3 fill:#c8e6c9
+```
+
+### Error Handling Per Platform
+
+```mermaid
+graph TB
+    subgraph Discord Error Handling
+        A1[Rate Limited] --> A2[Sleep retry_after]
+        A3[Connection Lost] --> A4[Auto Reconnect]
+        A5[Invalid Token] --> A6[Mark Not Ready]
+    end
+
+    subgraph Slack Error Handling
+        B1[Rate Limited] --> B2[Exponential Backoff]
+        B3[Socket Disconnected] --> B4[Handler Reconnects]
+        B5[Invalid Token] --> B6[Mark Not Ready]
+    end
+
+    subgraph Signal Error Handling
+        C1[signal-cli Crash] --> C2[Restart Daemon]
+        C3[Send Failed] --> C4[Retry Queue]
+        C5[Parse Error] --> C6[Skip Message]
+    end
+
+    style A2 fill:#fff9c4
+    style B2 fill:#fff9c4
+    style C2 fill:#fff9c4
+```
+
+---
+
+This document now includes comprehensive diagrams for both existing (Discord) and proposed (Slack, Signal) community platform integrations.

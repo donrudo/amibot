@@ -43,6 +43,36 @@ All diagrams are created using Mermaid format for easy rendering in GitHub/GitLa
 - **Testing Strategy**: Unit, integration, and manual testing approaches
 - **Migration Path**: Backward compatibility and deployment guides
 
+### [FEATURE_PROPOSAL_SLACK_SIGNAL.md](FEATURE_PROPOSAL_SLACK_SIGNAL.md)
+
+Comprehensive feature proposal for adding Slack and Signal community platform integrations.
+
+**Includes:**
+
+- **Class Diagrams**: Extended Community hierarchy with Slack and Signal implementations
+- **Sequence Diagrams**:
+  - Slack integration message flow
+  - Signal integration message flow
+  - Multi-platform deployment architecture
+  - Platform message flow comparison
+  - Slack app configuration sequence
+  - Signal setup and registration flow
+- **Platform Comparisons**: Feature matrices and capability analysis
+- **Configuration Patterns**: Multi-platform configuration support
+
+**Feature Proposal Includes:**
+
+- **Executive Summary**: Overview of multi-platform community support
+- **Technical Specifications**: Complete implementation for slack_client.py and signal_client.py
+- **Platform Requirements**:
+  - Slack: OAuth scopes, Socket Mode, event subscriptions
+  - Signal: signal-cli installation, daemon mode, registration
+- **Configuration Schema**: Multi-platform YAML configurations
+- **Implementation Roadmap**: 6-week development plan
+- **Use Cases**: Enterprise (Slack) and privacy-focused (Signal) scenarios
+- **Testing Strategy**: Unit and integration testing for both platforms
+- **Setup Guides**: Platform-specific installation and configuration
+
 ## For AI Assistants
 
 When working on AmiBot, refer to:
