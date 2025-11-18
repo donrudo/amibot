@@ -8,22 +8,40 @@ This directory contains comprehensive technical documentation for the AmiBot pro
 
 Complete set of technical diagrams documenting the system architecture, data flows, and operational patterns.
 
+### [FEATURE_PROPOSAL_AGENT_MCP.md](FEATURE_PROPOSAL_AGENT_MCP.md)
+
+Comprehensive feature proposal for adding custom agent and MCP bot integration capabilities.
+
 **Includes:**
 
-- **Class Diagrams**: Full inheritance hierarchy and relationships
+- **Class Diagrams**: Full inheritance hierarchy and relationships (including proposed AgentBot and MCPBot)
 - **Sequence Diagrams**:
   - Application startup sequence
   - Message handling flow
   - Progressive token strategy
   - Configuration loading
   - Health check endpoints
+  - AgentBot request/response flow (proposed)
+  - MCPBot tool calling flow (proposed)
 - **State Diagrams**: Bot and Discord client lifecycles
 - **Data Flow Diagrams**: Conversation context and message routing
 - **Deployment Architecture**: Kubernetes and AWS ECS deployments
 - **Component Interaction**: System-wide component communication
 - **Error Handling Patterns**: Resilience and recovery strategies
+- **Proposed Features**: AgentBot and MCPBot integration diagrams
 
 All diagrams are created using Mermaid format for easy rendering in GitHub/GitLab.
+
+**Feature Proposal Includes:**
+
+- **Executive Summary**: Overview of custom agent and MCP bot capabilities
+- **Technical Specifications**: Detailed implementation plans for bot_agent.py and bot_mcp.py
+- **Architecture Design**: How new bots integrate with existing framework
+- **Configuration Schema**: Complete YAML configuration examples
+- **Implementation Roadmap**: 6-week development plan
+- **Use Cases**: Real-world applications and benefits
+- **Testing Strategy**: Unit, integration, and manual testing approaches
+- **Migration Path**: Backward compatibility and deployment guides
 
 ## For AI Assistants
 

@@ -896,3 +896,399 @@ graph TB
 ---
 
 This document provides comprehensive technical diagrams for understanding AmiBot's architecture, data flows, and operational patterns.
+
+## Proposed Architecture: AgentBot and MCPBot
+
+**Note**: These diagrams represent proposed features detailed in [FEATURE_PROPOSAL_AGENT_MCP.md](FEATURE_PROPOSAL_AGENT_MCP.md).
+
+### Extended Class Hierarchy with New Bot Types
+
+```mermaid
+classDiagram
+    %% Existing Classes
+    class User {
+        -string _name
+        -string _llmprovider
+        -bool _check
+        +chat_completion(name, message) string
+    }
+
+    class Bot {
+        -string _model
+        -client _client
+        -DictNoNone _messages
+        -range _token_limits
+        +chat_completion(name, message) string
+    }
+
+    %% Existing Bot Implementations
+    class OpenaiBot {
+        -OpenAI _client
+        +chat_completion(name, message) string
+    }
+
+    class AnthropicBot {
+        -Anthropic _client
+        +chat_completion(name, message) string
+    }
+
+    class PerplexityBot {
+        -OpenAI _client
+        +chat_completion(name, message) string
+    }
+
+    %% NEW: AgentBot
+    class AgentBot {
+        -string _endpoint_url
+        -string _request_format
+        -string _auth_type
+        -dict _custom_headers
+        -int _timeout
+        +_setup_auth(secret) void
+        +_build_request(messages, max_tokens) dict
+        +chat_completion(name, message) string
+    }
+
+    %% NEW: MCPBot
+    class MCPBot {
+        -string _server_command
+        -list _server_args
+        -dict _server_env
+        -ClientSession _session
+        -list _available_tools
+        -list _available_resources
+        +_init_mcp_session() async
+        +_call_tool(tool_name, arguments) async
+        +_read_resource(uri) async
+        +chat_completion(name, message) string
+    }
+
+    %% Relationships
+    User <|-- Bot
+    Bot <|-- OpenaiBot
+    Bot <|-- AnthropicBot
+    Bot <|-- PerplexityBot
+    Bot <|-- AgentBot : NEW
+    Bot <|-- MCPBot : NEW
+
+    %% External Dependencies
+    class HTTPClient {
+        +post(url, json, headers) Response
+    }
+
+    class MCPClientSession {
+        +initialize() async
+        +list_tools() async
+        +list_resources() async
+        +call_tool(name, args) async
+        +read_resource(uri) async
+    }
+
+    AgentBot --> HTTPClient : uses
+    MCPBot --> MCPClientSession : uses
+```
+
+### AgentBot Message Flow
+
+```mermaid
+sequenceDiagram
+    participant User as Discord User
+    participant Discord as Discord Client
+    participant AgentBot
+    participant HTTPClient as HTTP Client
+    participant Agent as Custom Agent Server
+    participant Response as Discord Channel
+
+    User->>Discord: Send message
+    Discord->>AgentBot: chat_completion(username, message)
+
+    AgentBot->>AgentBot: Check/create user context
+    AgentBot->>AgentBot: Append user message
+
+    loop Progressive Token Strategy
+        AgentBot->>AgentBot: Build request payload
+        Note over AgentBot: Format: OpenAI/Anthropic/Custom
+
+        AgentBot->>HTTPClient: POST to endpoint_url
+        HTTPClient->>Agent: HTTP Request with auth headers
+
+        Agent->>Agent: Process message
+        Agent-->>HTTPClient: JSON Response
+
+        HTTPClient-->>AgentBot: Parse response
+
+        alt Response Complete
+            AgentBot->>AgentBot: Break loop
+        else Response Truncated
+            AgentBot->>AgentBot: Increase token limit
+        end
+    end
+
+    AgentBot->>AgentBot: Append assistant response
+    AgentBot-->>Discord: Return complete message
+
+    Discord->>Response: Send chunks
+    Response-->>User: Display response
+```
+
+### MCPBot Tool Calling Flow
+
+```mermaid
+sequenceDiagram
+    participant User as Discord User
+    participant Discord as Discord Client
+    participant MCPBot
+    participant MCPSession as MCP Client Session
+    participant MCPServer as MCP Server
+    participant LLM as Underlying LLM
+    participant Response as Discord Channel
+
+    User->>Discord: Send message
+    Discord->>MCPBot: chat_completion(username, message)
+
+    alt First Call
+        MCPBot->>MCPSession: initialize()
+        MCPSession->>MCPServer: Connect
+        MCPServer-->>MCPSession: Connected
+        MCPSession->>MCPServer: list_tools()
+        MCPServer-->>MCPSession: Available tools
+        MCPSession->>MCPServer: list_resources()
+        MCPServer-->>MCPSession: Available resources
+    end
+
+    MCPBot->>MCPBot: Build enhanced context
+    Note over MCPBot: Include available tools
+
+    MCPBot->>LLM: Send message with tool context
+    LLM-->>MCPBot: Response with tool calls
+
+    loop For each tool call
+        MCPBot->>MCPSession: call_tool(name, args)
+        MCPSession->>MCPServer: Execute tool
+        MCPServer-->>MCPSession: Tool result
+        MCPSession-->>MCPBot: Result
+
+        MCPBot->>LLM: Send tool results
+        LLM-->>MCPBot: Updated response
+    end
+
+    MCPBot->>MCPBot: Append final response
+    MCPBot-->>Discord: Return complete message
+
+    Discord->>Response: Send chunks
+    Response-->>User: Display response
+```
+
+### AgentBot Integration Architecture
+
+```mermaid
+graph TB
+    subgraph Discord Platform
+        A[Discord User]
+    end
+
+    subgraph AmiBot Application
+        B[Discord Client]
+        C[AgentBot]
+    end
+
+    subgraph Custom Agent Options
+        D[Ollama<br/>localhost:11434]
+        E[LM Studio<br/>localhost:1234]
+        F[vLLM<br/>localhost:8000]
+        G[Custom Agent<br/>company.com/api]
+        H[LocalAI<br/>localhost:8080]
+    end
+
+    A <-->|Messages| B
+    B <-->|chat_completion| C
+
+    C -->|HTTP POST<br/>OpenAI Format| D
+    C -->|HTTP POST<br/>OpenAI Format| E
+    C -->|HTTP POST<br/>OpenAI Format| F
+    C -->|HTTP POST<br/>Custom Format| G
+    C -->|HTTP POST<br/>OpenAI Format| H
+
+    D -->|JSON Response| C
+    E -->|JSON Response| C
+    F -->|JSON Response| C
+    G -->|JSON Response| C
+    H -->|JSON Response| C
+
+    style C fill:#e3f2fd
+    style D fill:#c8e6c9
+    style E fill:#c8e6c9
+    style F fill:#c8e6c9
+    style G fill:#fff4e1
+    style H fill:#c8e6c9
+```
+
+### MCPBot Integration Architecture
+
+```mermaid
+graph TB
+    subgraph Discord Platform
+        A[Discord User]
+    end
+
+    subgraph AmiBot Application
+        B[Discord Client]
+        C[MCPBot]
+        D[MCP Client Session]
+    end
+
+    subgraph MCP Servers
+        E[Filesystem Server<br/>File access]
+        F[GitHub Server<br/>Code access]
+        G[Database Server<br/>Query data]
+        H[Custom MCP Server<br/>Business logic]
+    end
+
+    subgraph LLM Backend
+        I[Claude/GPT<br/>Decision Making]
+    end
+
+    A <-->|Messages| B
+    B <-->|chat_completion| C
+    C <-->|Async calls| D
+
+    D <-->|stdio/websocket| E
+    D <-->|stdio/websocket| F
+    D <-->|stdio/websocket| G
+    D <-->|stdio/websocket| H
+
+    C <-->|API calls| I
+
+    I -.->|Tool calls| C
+    E -.->|Tool results| C
+    F -.->|Tool results| C
+    G -.->|Tool results| C
+    H -.->|Tool results| C
+
+    style C fill:#e3f2fd
+    style D fill:#fff4e1
+    style I fill:#ffccbc
+    style E fill:#c8e6c9
+    style F fill:#c8e6c9
+    style G fill:#c8e6c9
+    style H fill:#c8e6c9
+```
+
+### Configuration Comparison
+
+```mermaid
+graph LR
+    subgraph Existing Bots
+        A[OpenAI Config<br/>• provider: openai<br/>• key: sk-...<br/>• model: gpt-4]
+        B[Anthropic Config<br/>• provider: anthropic<br/>• key: sk-ant-...<br/>• model: claude-3-5]
+    end
+
+    subgraph NEW: Custom Agent Bots
+        C[AgentBot Config<br/>• provider: agent<br/>• endpoint_url: localhost:11434<br/>• request_format: openai<br/>• auth_type: none]
+        D[MCPBot Config<br/>• provider: mcp<br/>• server_command: npx<br/>• server_args: [...server...]<br/>• llm_backend: anthropic]
+    end
+
+    style A fill:#e3f2fd
+    style B fill:#e3f2fd
+    style C fill:#c8e6c9
+    style D fill:#fff9c4
+```
+
+### AgentBot Request Formats
+
+```mermaid
+graph TB
+    A[AgentBot] --> B{Request Format}
+
+    B -->|OpenAI| C[OpenAI Format<br/>messages: array<br/>max_tokens: int<br/>temperature: float]
+
+    B -->|Anthropic| D[Anthropic Format<br/>system: string<br/>messages: array<br/>max_tokens: int]
+
+    B -->|Custom| E[Custom Format<br/>prompt: string<br/>max_length: int<br/>context: array]
+
+    C --> F[Compatible with:<br/>• Ollama<br/>• LM Studio<br/>• vLLM<br/>• LocalAI]
+
+    D --> G[Compatible with:<br/>• Custom Anthropic<br/>• Compatible APIs]
+
+    E --> H[Compatible with:<br/>• Internal systems<br/>• Proprietary agents<br/>• Custom formats]
+
+    style A fill:#e3f2fd
+    style C fill:#c8e6c9
+    style D fill:#fff9c4
+    style E fill:#ffccbc
+```
+
+### Deployment Options Comparison
+
+```mermaid
+graph TB
+    subgraph Current Deployment
+        A[AmiBot Pod]
+        B[Commercial LLM APIs<br/>OpenAI/Anthropic/Perplexity]
+        A -->|Internet| B
+    end
+
+    subgraph NEW: AgentBot Deployment
+        C[AmiBot Pod]
+        D[Sidecar: Local Model<br/>Ollama Container]
+        C -->|localhost| D
+    end
+
+    subgraph NEW: MCPBot Deployment
+        E[AmiBot Pod]
+        F[MCP Server Pod<br/>Filesystem/GitHub/etc]
+        G[External LLM API<br/>Claude/GPT]
+        E -->|Service| F
+        E -->|Internet| G
+    end
+
+    style A fill:#e3f2fd
+    style C fill:#c8e6c9
+    style E fill:#fff9c4
+```
+
+---
+
+## Implementation Roadmap
+
+### Phase 1: AgentBot (Weeks 1-2)
+
+```mermaid
+gantt
+    title AgentBot Implementation Timeline
+    dateFormat YYYY-MM-DD
+    section Design
+    Architecture Design           :done, des1, 2025-11-15, 3d
+    section Development
+    Core Implementation          :active, dev1, 2025-11-18, 5d
+    OpenAI Format Support        :dev2, after dev1, 2d
+    Custom Format Support        :dev3, after dev2, 2d
+    section Testing
+    Unit Tests                   :test1, after dev3, 2d
+    Integration Tests            :test2, after test1, 2d
+    section Documentation
+    Update Docs                  :doc1, after test2, 2d
+```
+
+### Phase 2: MCPBot (Weeks 3-4)
+
+```mermaid
+gantt
+    title MCPBot Implementation Timeline
+    dateFormat YYYY-MM-DD
+    section Design
+    MCP Integration Design       :done, des2, 2025-11-15, 3d
+    section Development
+    MCP Client Setup            :dev4, 2025-11-25, 4d
+    Tool Calling Logic          :dev5, after dev4, 3d
+    LLM Integration             :dev6, after dev5, 3d
+    section Testing
+    Unit Tests                  :test3, after dev6, 2d
+    Integration Tests           :test4, after test3, 3d
+    section Documentation
+    Update Docs                 :doc2, after test4, 2d
+```
+
+---
+
+This document now includes comprehensive diagrams for both existing and proposed AmiBot architectures.
