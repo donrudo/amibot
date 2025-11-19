@@ -10,14 +10,18 @@
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
-3. [Codebase Structure](#codebase-structure)
-4. [Development Guidelines](#development-guidelines)
-5. [Configuration](#configuration)
-6. [Deployment](#deployment)
-7. [Code Patterns and Conventions](#code-patterns-and-conventions)
-8. [Testing and CI/CD](#testing-and-cicd)
-9. [Common Tasks](#common-tasks)
-10. [Known Issues and TODOs](#known-issues-and-todos)
+3. [Technical Diagrams](#technical-diagrams)
+4. [Codebase Structure](#codebase-structure)
+5. [Development Guidelines](#development-guidelines)
+6. [Configuration](#configuration)
+7. [Deployment](#deployment)
+8. [Code Patterns and Conventions](#code-patterns-and-conventions)
+9. [API Contracts and Interfaces](#api-contracts-and-interfaces)
+10. [State Management](#state-management)
+11. [Error Handling and Resilience](#error-handling-and-resilience)
+12. [Testing and CI/CD](#testing-and-cicd)
+13. [Common Tasks](#common-tasks)
+14. [Known Issues and TODOs](#known-issues-and-todos)
 
 ---
 
@@ -42,6 +46,13 @@ AmiBot is a Discord bot that provides conversational AI capabilities through mul
 - **Cloud**: AWS (boto3), Kubernetes
 - **CI/CD**: CircleCI
 - **IaC**: Terraform
+
+**For Detailed Diagrams**: See [documentation/TECHNICAL_DIAGRAMS.md](documentation/TECHNICAL_DIAGRAMS.md) for comprehensive:
+- Class diagrams with full inheritance hierarchy
+- Sequence diagrams for all major flows
+- State diagrams for bot and Discord lifecycles
+- Data flow diagrams
+- Deployment architecture diagrams
 
 ---
 
@@ -113,6 +124,64 @@ ConfigLoader (base)
                                └─> Split into 2000-char chunks
                                    └─> Send chunks to Discord
 ```
+
+---
+
+## Technical Diagrams
+
+AmiBot includes comprehensive technical diagrams documenting the system architecture, data flows, and operational patterns. These diagrams are essential for understanding how components interact.
+
+### Available Diagrams
+
+See **[documentation/TECHNICAL_DIAGRAMS.md](documentation/TECHNICAL_DIAGRAMS.md)** for the complete set of diagrams:
+
+1. **Class Diagram** - Full inheritance hierarchy showing User → Bot → (OpenaiBot/AnthropicBot/PerplexityBot), Community → Discord, and ConfigLoader → (FromFile/FromS3)
+
+2. **Sequence Diagrams**:
+   - Application startup sequence
+   - Message handling flow (Discord → Bot → LLM → Discord)
+   - Progressive token strategy flow
+   - Configuration loading flow
+   - Health check flow
+
+3. **State Diagrams**:
+   - Bot lifecycle states (Initializing → Ready → Processing → Shutdown)
+   - Discord client states (Created → Connecting → Ready → Processing)
+
+4. **Data Flow Diagrams**:
+   - Conversation context management (per-user message histories)
+   - Message flow through system
+   - DictNoNone custom data structure
+
+5. **Deployment Architecture**:
+   - Kubernetes deployment with ConfigMap and health probes
+   - AWS ECS deployment with Fargate, S3, and IAM
+   - CI/CD pipeline flow (CircleCI → Terraform → ECS)
+
+6. **Component Interaction Diagram** - Shows how all components communicate
+
+### Key Architectural Insights from Diagrams
+
+**Progressive Token Strategy** (see documentation/TECHNICAL_DIAGRAMS.md):
+```
+Start: 256 tokens → API call → Truncated?
+  ├─ No: Return complete response
+  └─ Yes: Increase to 512 tokens → Retry → ...
+```
+
+**Per-User Context Isolation** (see documentation/TECHNICAL_DIAGRAMS.md):
+```python
+_messages = {
+    'system_role': [...],
+    'alice': [user_msg, assistant_msg, ...],
+    'bob': [user_msg, assistant_msg, ...]
+}
+```
+
+**Concurrency Model** (see documentation/TECHNICAL_DIAGRAMS.md):
+- Single async event loop runs both Discord and FastAPI
+- Discord handlers are async, but bot.chat_completion() is synchronous
+- Multiple users can interact, but conversations are processed sequentially
 
 ---
 
@@ -691,6 +760,424 @@ async def on_message(chat_msg):
 
 ---
 
+## API Contracts and Interfaces
+
+### Bot Interface
+
+All bot implementations must conform to the Bot base class contract:
+
+```python
+class Bot(User):
+    # Required Properties
+    @property
+    def model(self) -> str:
+        """Returns the LLM model identifier"""
+
+    @property
+    def llmprovider(self) -> str:
+        """Returns the provider name (openai/anthropic/perplexity)"""
+
+    @property
+    def token_limits(self) -> range:
+        """Returns the token limit range for progressive strategy"""
+
+    @property
+    def messages(self) -> DictNoNone:
+        """Returns the conversation history dictionary"""
+
+    # Required Methods
+    def is_ready(self) -> bool:
+        """Returns True if bot is connected and ready"""
+
+    def chat_completion(self, name: str, message: str) -> str:
+        """
+        Processes a chat message and returns a response.
+
+        Args:
+            name: Username of the person sending the message
+            message: The message content
+
+        Returns:
+            Complete response string from the LLM
+
+        Implementation Requirements:
+        1. Check if user exists in self._messages, create if not
+        2. Append user message to conversation history
+        3. Iterate through token limits (progressive strategy)
+        4. Call LLM API with streaming
+        5. Accumulate response chunks
+        6. Check for truncation (finish_reason == "length")
+        7. Retry with higher token limit if truncated
+        8. Append assistant response to history
+        9. Return complete response
+        """
+```
+
+### Community Interface
+
+All platform integrations must conform to the Community base class contract:
+
+```python
+class Community:
+    # Required Properties
+    @property
+    def is_ready(self) -> bool:
+        """Returns True if platform client is connected"""
+
+    @property
+    def bot(self) -> Bot:
+        """Returns the injected bot instance"""
+
+    # Required Methods
+    async def start(self) -> None:
+        """Start the platform client connection"""
+
+    async def stop(self) -> None:
+        """Gracefully stop the platform client"""
+```
+
+### ConfigLoader Interface
+
+All configuration loaders must conform to the ConfigLoader base class contract:
+
+```python
+class ConfigLoader:
+    @property
+    def configuration(self) -> dict:
+        """
+        Returns configuration dictionary loaded from source.
+
+        Returns:
+            dict: Configuration with keys: amibot, discord, llm
+            None: If loading failed
+
+        Expected Structure:
+        {
+            'amibot': {
+                'username': str,
+                'system_role': str
+            },
+            'discord': {
+                'enabled': bool,
+                'token': str,
+                'application_id': str,
+                'public_key': str
+            },
+            'llm': {
+                'provider': str,  # 'openai' | 'anthropic' | 'perplexity'
+                'enabled': bool,
+                'model': str,
+                'key': str,
+                'tokens_range': {
+                    'from': int,
+                    'until': int,
+                    'increment': int
+                }
+            }
+        }
+        """
+```
+
+### LLM API Integration Patterns
+
+#### OpenAI/Perplexity Pattern
+
+```python
+# Streaming API with progressive token limits
+for token_limit in self.token_limits:
+    response_stream = self.client.chat.completions.create(
+        stream=True,
+        model=self.model,
+        max_tokens=token_limit,
+        temperature=0.5,
+        messages=self._messages[name]
+    )
+
+    # Accumulate streamed response
+    for response in response_stream:
+        if response.choices[0].finish_reason == "length":
+            # Truncated - try next token limit
+            break
+        if response.choices[0].delta.content:
+            assistant_message += response.choices[0].delta.content
+
+    # Check if complete
+    if completed:
+        break
+```
+
+#### Anthropic Pattern
+
+```python
+# Context manager streaming with system role separation
+for token_limit in self.token_limits:
+    with self.client.messages.stream(
+        model=self.model,
+        system=f"{self._messages.get('system_role', [])}",
+        temperature=0.5,
+        max_tokens=token_limit,
+        messages=self._messages[name]
+    ) as response_stream:
+        response_stream.until_done()
+        response = response_stream.get_final_message()
+
+        # Check stop reason
+        if response.stop_reason == "end_turn":
+            # Complete
+            break
+        elif response.stop_reason == "max_tokens":
+            # Truncated - continue with next limit
+            continue
+```
+
+### Health Check API
+
+**Endpoint**: `GET /liveness`
+- **Success**: `200 OK {"message": "OK"}`
+- **Failure**: `202 Not Ready` - Objects not initialized
+
+**Endpoint**: `GET /readiness`
+- **Success**: `200 OK {"message": "OK"}`
+- **Failures**:
+  - `500 Internal Error` - Both bot and community not ready
+  - `503 Community is Offline` - Discord client not connected
+  - `503 Bot is gone` - Bot client not initialized
+
+---
+
+## State Management
+
+### Bot State Lifecycle
+
+```
+Initialization Phase:
+├─ __init__() called
+├─ API client created
+├─ _messages initialized with DictNoNone
+├─ system_role added to messages['system_role']
+└─ _check = True (ready flag set)
+
+Operational Phase (per message):
+├─ chat_completion() called
+├─ Check/create user in _messages
+├─ Append user message
+├─ Enter progressive token loop
+│  ├─ Call LLM API
+│  ├─ Stream response
+│  └─ Check completion status
+├─ Append assistant message
+└─ Return response
+
+Error States:
+├─ Client connection fails → _check = False
+├─ API error → Log and continue
+└─ Rate limit → Retry with backoff
+```
+
+### Conversation State
+
+**Per-User Isolation**:
+```python
+_messages = DictNoNone()
+
+# System role shared across all users
+_messages['system_role'] = [
+    {'role': 'system', 'content': 'Bot personality...'}
+]
+
+# Individual user conversations
+_messages['alice'] = [
+    {'role': 'user', 'content': 'Alice says: Hello'},
+    {'role': 'assistant', 'content': 'Hi Alice!'}
+]
+
+_messages['bob'] = [
+    {'role': 'user', 'content': 'Bob says: What is Python?'},
+    {'role': 'assistant', 'content': 'Python is a programming language...'}
+]
+```
+
+**State Persistence**:
+- ⚠️ **Not Implemented**: Conversations are lost on restart (known issue: "amnesia")
+- **In-Memory Only**: `_messages` dictionary stored in bot instance
+- **No Database**: No external persistence layer
+- **TODO**: Add database support (Pinecone, DynamoDB, PostgreSQL)
+
+### Discord Client State
+
+```
+Connection Lifecycle:
+├─ Created: Client instantiated
+├─ Connecting: start() called, connecting to Discord
+├─ Connected: on_connect() triggered
+├─ Ready: on_ready() triggered, _check = True
+├─ Processing: on_message() handling messages
+├─ Error: on_error() triggered, _check = False
+└─ Stopped: stop() called, client closed
+```
+
+**State Transitions**:
+1. `Created → Connecting`: `await client.start(token)`
+2. `Connecting → Connected`: Discord WebSocket established
+3. `Connected → Ready`: Bot user loaded, can receive events
+4. `Ready → Processing`: Message event received
+5. `Processing → Ready`: Message handled, waiting for next
+6. `Ready/Error → Stopped`: `await client.close()`
+
+### Application State
+
+**Global State** (`__main__.py`):
+```python
+# Global variables (module-level)
+amigo = None        # Bot instance
+community = None    # Discord instance
+load = None         # ConfigLoader instance
+
+# State transitions:
+# 1. Parse arguments
+# 2. Load configuration
+# 3. Instantiate bot (amigo)
+# 4. Instantiate community
+# 5. Inject bot into community (community.bot = amigo)
+# 6. Start event loop
+```
+
+**Event Loop State**:
+- Single `asyncio` event loop manages both Discord and FastAPI
+- Two concurrent tasks:
+  1. `community.start()` - Discord client
+  2. `api_server.serve()` - Health check API
+
+---
+
+## Error Handling and Resilience
+
+### Discord Rate Limiting
+
+**Pattern**: Exponential backoff with retry
+
+```python
+try:
+    await chat_msg.channel.send(msg)
+except discord.errors.RateLimited as e:
+    await asyncio.sleep(e.retry_after)  # Wait required time
+    await chat_msg.channel.send(msg)    # Retry once
+finally:
+    time.sleep(1)  # Always wait 1s between chunks
+```
+
+**Rate Limit Details**:
+- Discord limits: 5 messages per 5 seconds per channel
+- 2000 character limit per message
+- `retry_after` provided in exception (seconds to wait)
+
+### LLM API Errors
+
+**OpenAI/Perplexity**:
+```python
+# No explicit error handling in current implementation
+# Errors propagate to Discord handler
+# TODO: Add try/except for:
+# - openai.error.RateLimitError
+# - openai.error.APIConnectionError
+# - openai.error.AuthenticationError
+```
+
+**Anthropic**:
+```python
+# Stream context manager handles connection errors
+# Usage tracking available:
+response.usage.input_tokens
+response.usage.output_tokens
+
+# Stop reasons:
+# - "end_turn": Normal completion
+# - "max_tokens": Truncated, retry with more tokens
+# - Other reasons logged but not handled
+```
+
+### Configuration Loading Errors
+
+**YAML Parsing**:
+```python
+try:
+    configuration = yaml.safe_load(stream)
+except yaml.YAMLError as exc:
+    print(f"Exception: {exc}")
+    return None  # Caller must handle None
+```
+
+**S3 Access Errors**:
+```python
+# boto3 exceptions not explicitly caught
+# Will raise:
+# - botocore.exceptions.NoCredentialsError
+# - botocore.exceptions.ClientError
+# - botocore.exceptions.ParamValidationError
+
+# TODO: Add explicit error handling
+```
+
+### Progressive Token Strategy Resilience
+
+**Cost Control**:
+```python
+# Start with minimum tokens
+for token_limit in range(256, 4096, 256):
+    # Make API call
+    if response_complete:
+        break
+    # Otherwise retry with more tokens
+```
+
+**Benefits**:
+- Prevents overspending on simple queries
+- Ensures quality responses for complex queries
+- Graceful degradation (warns at max limit)
+
+**Failure Modes**:
+- All token limits exhausted: Returns partial response with warning
+- API timeout: Returns empty/partial response
+- API error: Exception propagates (not caught)
+
+### Graceful Shutdown
+
+```python
+async def shutdown_event():
+    """Called on FastAPI lifespan shutdown"""
+    await community.stop()    # Close Discord connection
+    amigo.client.close()      # Close LLM client
+
+# Triggered by:
+# - Ctrl+C (KeyboardInterrupt)
+# - SIGTERM signal
+# - Application error
+```
+
+### Known Error Scenarios
+
+1. **Long messages interrupted**: Sometimes Discord responses cut in half
+   - **Cause**: Unknown (rate limiting? typing indicator timeout?)
+   - **Workaround**: None currently
+   - **TODO**: Investigate and add retry logic
+
+2. **Chunking breaks formatting**: Messages split mid-word/code-block
+   - **Cause**: Naive 2000-char chunking
+   - **Workaround**: None currently
+   - **TODO**: Smart chunking respecting boundaries
+
+3. **No usage stats from OpenAI**: Can't track token consumption
+   - **Cause**: API change (streaming no longer provides usage)
+   - **Workaround**: None
+   - **TODO**: Use non-streaming or token counting library
+
+4. **Conversation amnesia**: Context lost on restart
+   - **Cause**: No persistence layer
+   - **Workaround**: None
+   - **TODO**: Implement database storage
+
+---
+
 ## Testing and CI/CD
 
 ### Current Testing Status
@@ -1076,7 +1563,24 @@ From `README.md`:
 
 ## Changelog
 
-### 2025-11-15
+### 2025-11-15 (Update 2)
+- **Added comprehensive technical diagrams** in documentation/TECHNICAL_DIAGRAMS.md:
+  - Class diagrams with full inheritance hierarchy
+  - Sequence diagrams for all major flows (startup, message handling, token strategy, config loading, health checks)
+  - State diagrams for bot and Discord lifecycles
+  - Data flow diagrams for conversation context and message routing
+  - Deployment architecture diagrams for Kubernetes and AWS ECS
+  - CI/CD pipeline flow diagram
+  - Component interaction diagram
+- **Added new documentation sections**:
+  - API Contracts and Interfaces (Bot, Community, ConfigLoader)
+  - LLM API Integration Patterns (OpenAI/Perplexity, Anthropic)
+  - State Management (Bot lifecycle, conversation state, Discord state, application state)
+  - Error Handling and Resilience (rate limiting, API errors, config errors, graceful shutdown)
+- Enhanced architecture documentation with diagram references
+- Improved code location references
+
+### 2025-11-15 (Initial)
 - Initial CLAUDE.md creation
 - Documented complete codebase structure
 - Added development guidelines
